@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Boutique</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Gestion de Boutique</h1>
+        <nav>
+            <ul>
+                <li><a href="#" data-section="accueil">Accueil</a></li>
+                <li><a href="#" data-section="ventes">Ventes</a></li>
+                <li><a href="#" data-section="stock">Stock</a></li>
+                <li><a href="#" data-section="benefices">Bénéfices</a></li>
+                <li><a href="#" data-section="recouvrement">Recouvrement</a></li>
+                <li><a href="#" data-section="verifier">Vérifier IMEI</a></li>
+            </ul>
+        </nav>
+        <select id="boutiqueSelect">
+            <option value="Boutique1">Boutique 1</option>
+            <option value="Boutique2">Boutique 2</option>
+            <option value="Boutique3">Boutique 3</option>
+            <option value="Toutes">Toutes les boutiques</option>
+        </select>
+    </header>
+
+    <main>
+        <section id="accueil" class="section">
+            <h2>Accueil</h2>
+            <div class="dashboard">
+                <div class="card">
+                    <h3>Ventes du jour</h3>
+                    <p id="ventesJour"></p>
+                </div>
+                <div class="card">
+                    <h3>Stock alerte</h3>
+                    <ul id="stockAlerte"></ul>
+                </div>
+            </div>
+            <div>
+              <canvas id="ventesChart" width="400" height="200"></canvas>
+            </div>
+        </section>
+
+        <section id="ventes" class="section hidden">
+            <h2>Enregistrer une vente</h2>
+            <form id="venteForm">
+                <label for="dateVente">Date:</label>
+                <input type="date" id="dateVente" required><br>
+
+                <label for="produitVente">Produit:</label>
+                <input type="text" id="produitVente" required list="produitsListe" autocomplete="off"><br>
+                <datalist id="produitsListe"></datalist>
+
+                <label for="quantiteVente">Quantité:</label>
+                <input type="number" id="quantiteVente" min="1" required><br>
+
+                <label for="prixUnitaireVente">Prix Unitaire:</label>
+                <input type="number" id="prixUnitaireVente" min="0" required><br>
+
+                <label for="typeVente">Type de vente:</label>
+                <select id="typeVente">
+                    <option value="detail">Détail</option>
+                    <option value="gros">Gros</option>
+                </select><br>
+
+                <label for="imeiVente">IMEI:</label>
+                <input type="text" id="imeiVente" required><br>
+
+                <label for="nomClient">Nom du Client:</label>
+                <input type="text" id="nomClient"><br>
+
+                <label for="telClient">Téléphone Client :</label>
+                <input type="tel" id="telClient" name="tel"  ><br>
+
+                <label for="estPaye">Payé:</label>
+                <input type="checkbox" id="estPaye" checked><br>
+
+                <button type="submit">Enregistrer</button>
+            </form>
+        </section>
+
+        <section id="stock" class="section hidden">
+            <h2>Gestion du stock</h2>
+            <form id="stockForm">
+                <label for="produitStock">Produit:</label>
+                <input type="text" id="produitStock" required list="produitsListe" autocomplete="off"><br>
+                 <datalist id="produitsListe"></datalist>
+                <label for="quantiteStock">Quantité:</label>
+                <input type="number" id="quantiteStock" min="0" required><br>
+                <label for="prixAchat">Prix d'achat:</label>
+                <input type="number" id="prixAchat" min="0" required><br>
+                <button type="submit">Ajouter au stock</button>
+            </form>
+            <table id="stockTable">
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Quantité</th>
+                        <th>Prix d'achat unitaire</th>
+                        <th>Prix de vente unitaire (détail)</th>
+                        <th>Prix de vente unitaire (gros)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="benefices" class="section hidden">
+            <h2>Bénéfices</h2>
+             <label for="dateDebut">Date de début:</label>
+            <input type="date" id="dateDebut"><br>
+            <label for="dateFin">Date de fin:</label>
+            <input type="date" id="dateFin"><br>
+            <button id="genererBenefices">Générer</button>
+
+            <div id="beneficeDetails">
+              <h3>Dépenses : <span id="depenses"></span> </h3>
+              <h3>Bénéfice total : <span id="beneficeTotal"></span></h3>
+              <table id="beneficesTable">
+                  <thead>
+                      <tr>
+                          <th>Produit</th>
+                          <th>Bénéfice</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+              </table>
+            </div>
+        </section>
+
+        <section id="recouvrement" class="section hidden">
+            <h2>Recouvrement</h2>
+            <table id="recouvrementTable">
+                <thead>
+                    <tr>
+                        <th>Nom du client</th>
+                        <th>Téléphone</th>
+                        <th>Produit</th>
+                        <th>Montant dû</th>
+                        <th>Date d'achat</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </section>
+         <section id="verifier" class="section hidden">
+            <h2>Vérifier IMEI</h2>
+            <label for="imeiAVerifier">IMEI :</label>
+            <input type="text" id="imeiAVerifier" required>
+            <button id="verifierImei">Vérifier</button>
+             <div id="resultatVerification">
+                <p>Produit : <span id="produitResultat"></span></p>
+                <p>Date de vente : <span id="dateVenteResultat"></span></p>
+                 <p>Nom du client : <span id="nomClientResultat"></span></p>
+                <p>Statut du paiement : <span id="statutPaiementResultat"></span></p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2023 Gestion de Boutique</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
