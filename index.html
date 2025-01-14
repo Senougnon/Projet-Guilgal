@@ -8,8 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
 </head>
 <body>
+
     <header>
         <h1>Gestion de Boutique</h1>
         <nav>
@@ -20,14 +22,22 @@
                 <li><a href="#" data-section="benefices">Bénéfices</a></li>
                 <li><a href="#" data-section="recouvrement">Recouvrement</a></li>
                 <li><a href="#" data-section="verifier">Vérifier IMEI</a></li>
+                 <li><a href="#" data-section="analyse">Analyse</a></li>
             </ul>
         </nav>
-        <select id="boutiqueSelect">
-            <option value="Boutique1">Boutique 1</option>
-            <option value="Boutique2">Boutique 2</option>
-            <option value="Boutique3">Boutique 3</option>
-            <option value="Toutes">Toutes les boutiques</option>
-        </select>
+         <div class="filters">
+            <select id="boutiqueSelect">
+                <option value="Boutique1">Boutique 1</option>
+                <option value="Boutique2">Boutique 2</option>
+                <option value="Boutique3">Boutique 3</option>
+                <option value="Toutes">Toutes les boutiques</option>
+            </select>
+            <label for="dateDebutFilter">Date de début:</label>
+            <input type="date" id="dateDebutFilter">
+            <label for="dateFinFilter">Date de fin:</label>
+            <input type="date" id="dateFinFilter">
+            <button id="filtrerBtn">Filtrer</button>
+        </div>
     </header>
 
     <main>
@@ -42,6 +52,10 @@
                     <h3>Stock alerte</h3>
                     <ul id="stockAlerte"></ul>
                 </div>
+                 <div class="card">
+                        <h4>Meilleur vendeur de la semaine : <span id="topSellerWeek"></span></h4>
+                         <h4>Meilleur vendeur du mois : <span id="topSellerMonth"></span></h4>
+                    </div>
             </div>
             <div>
               <canvas id="ventesChart" width="400" height="200"></canvas>
@@ -55,8 +69,9 @@
                 <input type="date" id="dateVente" required><br>
 
                 <label for="produitVente">Produit:</label>
-                <input type="text" id="produitVente" required list="produitsListe" autocomplete="off"><br>
-                <datalist id="produitsListe"></datalist>
+                <select id="produitVente" required>
+                    <option value="">Sélectionnez un produit</option>
+                </select><br>
 
                 <label for="quantiteVente">Quantité:</label>
                 <input type="number" id="quantiteVente" min="1" required><br>
@@ -167,6 +182,83 @@
                  <p>Nom du client : <span id="nomClientResultat"></span></p>
                 <p>Statut du paiement : <span id="statutPaiementResultat"></span></p>
             </div>
+        </section>
+         <section id="analyse" class="section hidden">
+            <h2>Analyse des ventes</h2>
+
+            <h3>Top des ventes</h3>
+            <div class="card">
+                <h4>Par semaine</h4>
+                <table id="topVentesSemaine">
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Produit</th>
+                            <th>Nombre de ventes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données seront insérées ici -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h4>Par mois</h4>
+                <table id="topVentesMois">
+                    <thead>
+                        <tr>
+                            <th>Rang</th>
+                            <th>Produit</th>
+                            <th>Nombre de ventes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données seront insérées ici -->
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Produits invendus</h3>
+            <div class="card">
+                <h4>Cette semaine</h4>
+                <table id="invendusSemaine">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données seront insérées ici -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <h4>Ce mois</h4>
+                <table id="invendusMois">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données seront insérées ici -->
+                    </tbody>
+                </table>
+            </div>
+             <h3>Ventes par Vendeur</h3>
+                <div class="card">
+                  <table id="ventesParVendeur">
+                    <thead>
+                      <tr>
+                        <th>Vendeur</th>
+                        <th>Total des ventes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!-- Les données seront insérées ici -->
+                    </tbody>
+                  </table>
+                </div>
         </section>
     </main>
 

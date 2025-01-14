@@ -37,6 +37,21 @@ const dateVenteResultatSpan = document.getElementById('dateVenteResultat');
 const nomClientResultatSpan = document.getElementById('nomClientResultat');
 const statutPaiementResultatSpan = document.getElementById('statutPaiementResultat');
 const depensesSpan = document.getElementById('depenses');
+const dateDebutFilter = document.getElementById('dateDebutFilter');
+const dateFinFilter = document.getElementById('dateFinFilter');
+const filtrerBtn = document.getElementById('filtrerBtn');
+const currentUserSpan = document.getElementById('currentUser');
+const logoutBtn = document.getElementById('logoutBtn');
+const topVentesSemaineTable = document.getElementById('topVentesSemaine').querySelector('tbody');
+const topVentesMoisTable = document.getElementById('topVentesMois').querySelector('tbody');
+const invendusSemaineTable = document.getElementById('invendusSemaine').querySelector('tbody');
+const invendusMoisTable = document.getElementById('invendusMois').querySelector('tbody');
+const ventesParVendeurTable = document.getElementById('ventesParVendeur').querySelector('tbody');
+const topSellerWeekSpan = document.getElementById('topSellerWeek');
+const topSellerMonthSpan = document.getElementById('topSellerMonth');
+// Variables pour stocker l'état de l'utilisateur
+let currentUser = null;
+let currentUserId = null;
 
 // Fonction pour afficher la section sélectionnée et cacher les autres
 function afficherSection(sectionId) {
@@ -57,22 +72,32 @@ navLinks.forEach(link => {
         afficherSection(sectionId);
     });
 });
+
 // Fonction pour récupérer la liste des produits depuis Firebase
 function getProduits() {
-  const produitsRef = database.ref('produits');
-  produitsRef.on('value', (snapshot) => {
-    const produits = snapshot.val();
-    const produitsListe = document.getElementById('produitsListe');
-    produitsListe.innerHTML = ''; // Vider la liste existante
-
-    for (const produitId in produits) {
-      const produit = produits[produitId];
-      const option = document.createElement('option');
-      option.value = produit.nom;
-      produitsListe.appendChild(option);
-    }
-  });
-}
+    const produitsRef = database.ref('produits');
+    produitsRef.on('value', (snapshot) => {
+      const produits = snapshot.val();
+      const produitsListe = document.getElementById('produitsListe');
+      const produitVenteSelect = document.getElementById('produitVente');
+      produitsListe.innerHTML = ''; // Vider la liste existante
+      produitVenteSelect.innerHTML = '<option value="">Sélectionnez un produit</option>';
+  
+      for (const produitId in produits) {
+        const produit = produits[produitId];
+        const option = document.createElement('option');
+        option.value = produit.nom;
+        produitsListe.appendChild(option);
+  
+        // Créer une nouvelle option pour chaque produit
+        const optionVente = document.createElement('option');
+        optionVente.value = produit.nom;
+        optionVente.text = produit.nom;
+        produitVenteSelect.appendChild(optionVente);
+      }
+    });
+  }
+  
 
 // Appeler la fonction pour initialiser la liste des produits
 getProduits();
@@ -104,7 +129,8 @@ venteForm.addEventListener('submit', function(event) {
         nomClient: nomClient,
         telClient: telClient,
         statutPaiement: estPaye ? 'Payé' : 'Non payé',
-        prixTotal: prixTotal
+        prixTotal: prixTotal,
+        vendeur: currentUser // Ajouter l'ID de l'utilisateur actuel comme vendeur
     })
     .then(() => {
         alert('Vente enregistrée avec succès!');
@@ -683,6 +709,483 @@ function updateVentesChart(boutique) {
         });
     });
 }
+// Fonction pour filtrer les données par boutique et par plage de dates
+function filtrerDonnees(boutique, dateDebut, dateFin) {
+    if (boutique === 'Toutes') {
+        chargerStockToutesBoutiques();
+        chargerBeneficesToutesBoutiques(dateDebut, dateFin);
+        chargerRecouvrementsToutesBoutiques();
+        chargerVentesDuJourToutesBoutiques();
+    } else {
+        chargerStock(boutique);
+        chargerBenefices(boutique, dateDebut, dateFin);
+        chargerRecouvrements(boutique);
+        chargerVentesDuJour(boutique);
+    }
+}
+
+// Gestion du clic sur le bouton de filtrage
+filtrerBtn.addEventListener('click', () => {
+    const boutique = boutiqueSelect.value;
+    const dateDebut = dateDebutFilter.value;
+    const dateFin = dateFinFilter.value;
+
+    if (boutique === 'Toutes') {
+        chargerStockToutesBoutiques();
+        chargerBeneficesToutesBoutiques(dateDebut, dateFin);
+        chargerRecouvrementsToutesBoutiques();
+        chargerVentesDuJourToutesBoutiques();
+        updateVentesChartToutesBoutiques(); // Mettre à jour le graphique pour toutes les boutiques
+        // Mettre à jour les analyses
+        getTopSellingProducts(boutique, dateDebut, dateFin, 5, 'week');
+        getTopSellingProducts(boutique, dateDebut, dateFin, 5, 'month');
+        getUnsoldProducts(boutique, dateDebut, dateFin, 'week');
+        getUnsoldProducts(boutique, dateDebut, dateFin, 'month');
+        getSalesBySeller(boutique, dateDebut, dateFin);
+        
+    } else {
+        chargerStock(boutique);
+        chargerBenefices(boutique, dateDebut, dateFin);
+        chargerRecouvrements(boutique);
+        chargerVentesDuJour(boutique);
+        updateVentesChart(boutique); // Mettre à jour le graphique pour une boutique spécifique
+         // Mettre à jour les analyses pour la boutique sélectionnée
+        getTopSellingProducts(boutique, dateDebut, dateFin, 5, 'week');
+        getTopSellingProducts(boutique, dateDebut, dateFin, 5, 'month');
+        getUnsoldProducts(boutique, dateDebut, dateFin, 'week');
+        getUnsoldProducts(boutique, dateDebut, dateFin, 'month');
+        getSalesBySeller(boutique, dateDebut, dateFin);
+    }
+});
+
+// Fonctions pour charger les bénéfices, les recouvrements et les ventes du jour pour toutes les boutiques
+function chargerBeneficesToutesBoutiques(dateDebut, dateFin) {
+    beneficesTable.innerHTML = '';
+    depensesSpan.textContent = '0';
+    beneficeTotalSpan.textContent = '0';
+    const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+    let beneficesToutesBoutiques = {};
+
+    const fusionnerBenefices = (boutique, benefices, depenses) => {
+        for (const produit in benefices) {
+            if (!beneficesToutesBoutiques[produit]) {
+                beneficesToutesBoutiques[produit] = 0;
+            }
+            beneficesToutesBoutiques[produit] += benefices[produit];
+        }
+        depensesSpan.textContent = (parseFloat(depensesSpan.textContent) + depenses).toFixed(2);
+        actualiserTableauBenefices(beneficesToutesBoutiques);
+    };
+
+    boutiques.forEach(boutique => {
+        calculerEtAfficherBenefices(boutique, dateDebut, dateFin)
+            .then(({ benefices, depenses }) => {
+                fusionnerBenefices(boutique, benefices, depenses);
+            })
+            .catch(error => {
+                console.error("Erreur lors du calcul des bénéfices pour", boutique, error);
+            });
+    });
+
+    // Calculer le bénéfice total pour toutes les boutiques
+    database.ref('benefices').once('value', (snapshot) => {
+        const allBenefices = snapshot.val();
+        let beneficeTotal = 0;
+        for (const boutiqueKey in allBenefices) {
+            for (const dateKey in allBenefices[boutiqueKey]) {
+                if (dateKey >= dateDebut && dateKey <= dateFin) {
+                    beneficeTotal += parseFloat(allBenefices[boutiqueKey][dateKey].total) || 0;
+                }
+            }
+        }
+        beneficeTotalSpan.textContent = beneficeTotal.toFixed(2);
+    });
+}
+
+function chargerRecouvrementsToutesBoutiques() {
+    recouvrementTable.innerHTML = '';
+    const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+    boutiques.forEach(boutique => {
+        const recouvrementsRef = database.ref(`ventes/${boutique}`);
+        recouvrementsRef.on('value', (snapshot) => {
+            snapshot.forEach(childSnapshot => {
+                const vente = childSnapshot.val();
+                if (vente.statutPaiement === 'Non payé' && vente.date >= dateDebutFilter.value && vente.date <= dateFinFilter.value) {
+                    const row = recouvrementTable.insertRow
+                    row.insertCell().textContent = `(${boutique}) ${vente.nomClient}`;
+                    row.insertCell().textContent = vente.telClient;
+                    row.insertCell().textContent = vente.produit;
+                    row.insertCell().textContent = vente.prixTotal.toFixed(2);
+                    row.insertCell().textContent = vente.date;
+                    row.insertCell().textContent = vente.statutPaiement;
+                    const payerButton = document.createElement('button');
+                    payerButton.textContent = 'Payer';
+                    payerButton.addEventListener('click', () => {
+                        marquerCommePaye(childSnapshot.key, boutique);
+                    });
+                    row.insertCell().appendChild(payerButton);
+                }
+            });
+        });
+    });
+}
+
+function chargerVentesDuJourToutesBoutiques() {
+    const today = new Date().toISOString().split('T')[0];
+    let ventesDuJourTotal = 0;
+    const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+
+    boutiques.forEach(boutique => {
+        const ventesRef = database.ref(`ventes/${boutique}`);
+        ventesRef.once('value', (snapshot) => {
+            const ventes = snapshot.val();
+            for (const venteId in ventes) {
+                if (ventes[venteId].date === today) {
+                    ventesDuJourTotal++;
+                }
+            }
+            ventesJourSpan.textContent = ventesDuJourTotal;
+        });
+    });
+}
+
+// Mettre à jour le graphique pour toutes les boutiques
+function updateVentesChartToutesBoutiques() {
+    const ventesParJour = {};
+    const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+
+    const promises = boutiques.map(boutique => {
+        return new Promise((resolve) => {
+            const ventesRef = database.ref(`ventes/${boutique}`);
+            ventesRef.once('value', (snapshot) => {
+                const ventes = snapshot.val();
+                for (const venteId in ventes) {
+                    const date = ventes[venteId].date;
+                    if (!ventesParJour[date]) {
+                        ventesParJour[date] = 0;
+                    }
+                    ventesParJour[date]++;
+                }
+                resolve();
+            });
+        });
+    });
+
+    Promise.all(promises).then(() => {
+        const labels = Object.keys(ventesParJour);
+        const data = Object.values(ventesParJour);
+
+        const ctx = document.getElementById('ventesChart').getContext('2d');
+        if (window.ventesChart) {
+            window.ventesChart.destroy();
+        }
+        window.ventesChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nombre de ventes par jour (Toutes les boutiques)',
+                    data: data,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+}
+// Gestionnaire d'événements pour le bouton de déconnexion
+logoutBtn.addEventListener('click', () => {
+    firebase.auth().signOut().then(() => {
+        // Déconnexion réussie
+        currentUserSpan.textContent = '';
+        logoutBtn.classList.add('hidden');
+        afficherSection('auth'); // Affiche la section d'authentification
+    }).catch((error) => {
+        console.error("Erreur lors de la déconnexion:", error);
+    });
+});
+
+// Écouteur d'état d'authentification
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        // Utilisateur connecté
+        currentUser = user.email;
+        currentUserId = user.uid;
+        currentUserSpan.textContent = `Connecté en tant que : ${currentUser}`;
+        logoutBtn.classList.remove('hidden');
+        afficherSection('accueil'); // Affiche la section d'accueil
+         chargerVentesDuJour(boutiqueSelect.value);
+        chargerAlertesStock(boutiqueSelect.value);
+        // Définir la date du jour comme date de début par défaut
+        const today = new Date().toISOString().split('T')[0];
+        dateDebutFilter.value = today;
+
+        // Définir la date de fin comme la date du jour + 7 jours (une semaine)
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        dateFinFilter.value = nextWeek.toISOString().split('T')[0];
+        // Déclencher l'événement 'click' sur le bouton filtrerBtn
+         filtrerBtn.click();
+    } else {
+        // Utilisateur non connecté
+        currentUser = null;
+        currentUserId = null;
+        currentUserSpan.textContent = '';
+        logoutBtn.classList.add('hidden');
+        afficherSection('auth'); // Affiche la section d'authentification
+    }
+});
 
 // Appeler la fonction pour initialiser le graphique
 updateVentesChart('Boutique1'); // Mettre à jour le graphique pour la boutique par défaut
+ // Fonction pour afficher le formulaire de connexion
+    function showLoginForm() {
+        document.getElementById('auth-section').innerHTML = `
+            <div class="auth-form-container">
+                <h2>Connexion</h2>
+                <form id="loginForm">
+                    <input type="email" id="email" placeholder="Email" required>
+                    <input type="password" id="password" placeholder="Mot de passe" required>
+                    <button type="submit">Se connecter</button>
+                </form>
+                <div class="auth-switch">
+                    <p>Pas encore de compte ? <a href="#" id="showRegister">Inscrivez-vous</a></p>
+                </div>
+            </div>
+        `;
+        attachLoginFormEvents();
+        document.getElementById('auth-section').classList.remove('hidden');
+    }
+
+    // Fonction pour afficher le formulaire d'inscription
+    function showRegisterForm() {
+        document.getElementById('auth-section').innerHTML = `
+            <div class="auth-form-container">
+                <h2>Inscription</h2>
+                <form id="registerForm">
+                    <input type="email" id="email" placeholder="Email" required>
+                    <input type="password" id="password" placeholder="Mot de passe" required>
+                    <button type="submit">S'inscrire</button>
+                </form>
+                <div class="auth-switch">
+                    <p>Déjà un compte ? <a href="#" id="showLogin">Connectez-vous</a></p>
+                </div>
+            </div>
+        `;
+        attachRegisterFormEvents();
+        document.getElementById('auth-section').classList.remove('hidden');
+    }
+
+    // Fonction pour attacher les événements du formulaire de connexion
+    function attachLoginFormEvents() {
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        document.getElementById('showRegister').addEventListener('click', showRegisterForm);
+    }
+
+    // Fonction pour attacher les événements du formulaire d'inscription
+    function attachRegisterFormEvents() {
+        document.getElementById('registerForm').addEventListener('submit', handleRegister);
+        document.getElementById('showLogin').addEventListener('click', showLoginForm);
+    }
+
+    // Fonction pour gérer la connexion
+    function handleLogin(event) {
+        event.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Connexion réussie
+                console.log("Utilisateur connecté:", userCredential.user);
+                document.getElementById('auth-section').classList.add('hidden');
+            })
+            .catch((error) => {
+                // Gestion des erreurs de connexion
+                console.error("Erreur lors de la connexion:", error);
+                alert("Erreur lors de la connexion: " + error.message);
+            });
+    }
+
+    // Fonction pour gérer l'inscription
+    function handleRegister(event) {
+        event.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        firebase.auth().createUserWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+                // Inscription réussie
+                console.log("Utilisateur inscrit:", userCredential.user);
+                document.getElementById('auth-section').classList.add('hidden');
+            })
+            .catch((error) => {
+                // Gestion des erreurs d'inscription
+                console.error("Erreur lors de l'inscription:", error);
+                alert("Erreur lors de l'inscription: " + error.message);
+            });
+    }
+    // Gestion des dates pour les analyses par semaine et par mois
+  
+
+    // Fonctions pour l'analyse des ventes
+
+    function getMondayOfCurrentWeek() {
+        const today = new Date();
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+        return new Date(today.setDate(diff));
+    }
+
+    function getFirstDayOfCurrentMonth() {
+        const today = new Date();
+        return new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    function getTopSellingProducts(boutique, startDate, endDate, topN, period) {
+      
+        const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
+        ventesRef.once('value', (snapshot) => {
+            const allVentes = snapshot.val();
+            let ventes = {};
+
+            // Filtrer les ventes en fonction de la période sélectionnée
+            for (const boutiqueKey in allVentes) {
+                if (boutique === 'Toutes' || boutiqueKey === boutique) {
+                    for (const venteId in allVentes[boutiqueKey]) {
+                        const vente = allVentes[boutiqueKey][venteId];
+                        if (vente.date >= startDate && vente.date <= endDate) {
+                            if (!ventes[vente.produit]) {
+                                ventes[vente.produit] = 0;
+                            }
+                            ventes[vente.produit]++;
+                        }
+                    }
+                }
+            }
+
+            // Trier les produits par nombre de ventes
+            let sortedProducts = Object.entries(ventes).sort((a, b) => b[1] - a[1]);
+
+            // Mettre à jour le tableau HTML correspondant
+            let table;
+            if (period === 'week') {
+                table = topVentesSemaineTable;
+            } else if (period === 'month') {
+                table = topVentesMoisTable;
+            }
+            table.innerHTML = '';
+            for (let i = 0; i < Math.min(topN, sortedProducts.length); i++) {
+                const row = table.insertRow();
+                row.insertCell().textContent = i + 1;
+                row.insertCell().textContent = sortedProducts[i][0];
+                row.insertCell().textContent = sortedProducts[i][1];
+            }
+        });
+    }
+
+    function getUnsoldProducts(boutique, startDate, endDate, period) {
+       
+        const stockRef = boutique === 'Toutes' ? database.ref('stock') : database.ref(`stock/${boutique}`);
+        const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
+
+        Promise.all([stockRef.once('value'), ventesRef.once('value')])
+            .then(([stockSnapshot, ventesSnapshot]) => {
+                const allStock = stockSnapshot.val();
+                const allVentes = ventesSnapshot.val();
+                let soldProducts = new Set();
+
+                // Identifier les produits vendus dans la période sélectionnée
+                for (const boutiqueKey in allVentes) {
+                    if (boutique === 'Toutes' || boutiqueKey === boutique) {
+                        for (const venteId in allVentes[boutiqueKey]) {
+                            const vente = allVentes[boutiqueKey][venteId];
+                            if (vente.date >= startDate && vente.date <= endDate) {
+                                soldProducts.add(vente.produit);
+                            }
+                        }
+                    }
+                }
+
+                // Identifier les produits non vendus
+                let unsoldProducts = new Set();
+                for (const boutiqueKey in allStock) {
+                    if (boutique === 'Toutes' || boutiqueKey === boutique) {
+                        for (const produit in allStock[boutiqueKey]) {
+                            if (!soldProducts.has(produit)) {
+                                unsoldProducts.add(produit);
+                            }
+                        }
+                    }
+                }
+
+                // Mettre à jour le tableau HTML correspondant
+                let table;
+                if (period === 'week') {
+                    table = invendusSemaineTable;
+                } else if (period === 'month') {
+                    table = invendusMoisTable;
+                }
+                table.innerHTML = '';
+                unsoldProducts.forEach(product => {
+                    const row = table.insertRow();
+                    row.insertCell().textContent = product;
+                });
+            });
+    }
+
+   function getSalesBySeller(boutique, startDate, endDate) {
+      
+        const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
+        ventesRef.once('value', (snapshot) => {
+            const allVentes = snapshot.val();
+            let salesBySeller = {};
+
+            // Filtrer les ventes en fonction de la période sélectionnée
+            for (const boutiqueKey in allVentes) {
+                if (boutique === 'Toutes' || boutiqueKey === boutique) {
+                    for (const venteId in allVentes[boutiqueKey]) {
+                        const vente = allVentes[boutiqueKey][venteId];
+                        if (vente.date >= startDate && vente.date <= endDate) {
+                            if (!salesBySeller[vente.vendeur]) {
+                                salesBySeller[vente.vendeur] = 0;
+                            }
+                            salesBySeller[vente.vendeur] += vente.prixTotal;
+                        }
+                    }
+                }
+            }
+
+            // Trier les vendeurs par total des ventes
+            let sortedSellers = Object.entries(salesBySeller).sort((a, b) => b[1] - a[1]);
+
+            // Mettre à jour le tableau HTML
+            ventesParVendeurTable.innerHTML = '';
+            for (let i = 0; i < sortedSellers.length; i++) {
+                const row = ventesParVendeurTable.insertRow();
+                row.insertCell().textContent = sortedSellers[i][0];
+                row.insertCell().textContent = sortedSellers[i][1].toFixed(2);
+            }
+         // Trouver le meilleur vendeur de la semaine
+            const topSellerWeek = sortedSellers.length > 0 ? sortedSellers[0][0] : 'N/A';
+            topSellerWeekSpan.textContent = topSellerWeek;
+
+            // Trouver le meilleur vendeur du mois
+            const topSellerMonth = sortedSellers.length > 0 ? sortedSellers[0][0] : 'N/A';
+            topSellerMonthSpan.textContent = topSellerMonth;
+        });
+    }
+
+    // Initialiser l'affichage du formulaire de connexion au chargement de la page
+    showLoginForm();
+    afficherSection('auth');
+    // Appeler la fonction pour initialiser le graphique avec les données de toutes les boutiques
+updateVentesChartToutesBoutiques();

@@ -1,30 +1,77 @@
+/* style.css */
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background-color: #f8f9fa;
+    color: #343a40;
+    line-height: 1.6;
 }
 
 header {
-    background-color: #333;
+    background: linear-gradient(135deg, #0056b3, #007bff);
     color: #fff;
-    padding: 10px;
+    padding: 20px;
     text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.2);
 }
 
 nav ul {
     list-style: none;
     padding: 0;
+    margin: 20px 0;
 }
 
 nav ul li {
     display: inline;
-    margin: 0 10px;
+    margin: 0 15px;
 }
 
 nav ul li a {
     color: #fff;
     text-decoration: none;
+    font-weight: 600;
+    padding: 10px 15px;
+    border-radius: 20px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+nav ul li a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.filters {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.filters select, .filters input[type="date"], .filters button {
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.filters button {
+    background-color: #28a745;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.filters button:hover {
+    background-color: #218838;
 }
 
 main {
@@ -32,7 +79,19 @@ main {
 }
 
 .section {
-    margin-bottom: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.section h2 {
+    color: #007bff;
+    margin-top: 0;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 10px;
 }
 
 .hidden {
@@ -43,16 +102,22 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 th, td {
     border: 1px solid #ddd;
-    padding: 8px;
+    padding: 12px;
     text-align: left;
 }
 
 th {
-    background-color: #f0f0f0;
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background-color: #f8f9fa;
 }
 
 form {
@@ -61,50 +126,80 @@ form {
 
 label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 600;
 }
 
 input[type="text"],
 input[type="number"],
 input[type="date"],
 input[type="tel"],
+input[type="password"],
+input[type="email"],
 select {
     width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
-    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ced4da;
     border-radius: 4px;
     box-sizing: border-box;
+    font-size: 0.9rem;
 }
 
 button {
-    background-color: #333;
+    background-color: #007bff;
     color: #fff;
-    padding: 10px 20px;
+    padding: 12px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 button:hover {
-    background-color: #555;
+    background-color: #0056b3;
+    transform: translateY(-2px);
 }
+
 .dashboard {
     display: flex;
     gap: 20px;
+    flex-wrap: wrap;
 }
 
 .card {
     background-color: #fff;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 20px;
     flex: 1;
+    min-width: 250px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .card h3 {
     margin-top: 0;
+    color: #007bff;
+    font-size: 1.4rem;
 }
+.card h4 {
+    margin-top: 0;
+    color: #007bff;
+    font-size: 1rem;
+}
+
+.card p, .card ul {
+    font-size: 1rem;
+    color: #343a40;
+}
+
 #beneficesTable, #resultatVerification {
     margin-top: 20px;
 }
@@ -122,9 +217,11 @@ button:hover {
     background-color: #f0f0f0;
     font-weight: bold;
 }
-#beneficeDetails{
-      margin-top: 20px;
+
+#beneficeDetails {
+    margin-top: 20px;
 }
+
 #resultatVerification {
     margin-top: 20px;
     padding: 15px;
@@ -142,6 +239,230 @@ button:hover {
 #resultatVerification span {
     font-weight: bold;
 }
+
 #verifierImei {
     margin-left: 10px;
+}
+
+#ventesChart {
+    margin-top: 30px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Style pour le modal d'authentification */
+/* Styles for the authentication section */
+#auth-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color:rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.auth-form-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 400px;
+}
+
+.auth-form-container h2 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.auth-form-container input {
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #333;
+}
+
+.auth-form-container input:focus {
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-form-container button {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.auth-switch {
+    text-align: center;
+    margin-top: 15px;
+    color: #333;
+}
+
+.auth-switch a {
+    color: #1a2a6c;
+    text-decoration: none;
+}
+
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+.hidden {
+    display: none;
+}
+#currentUser {
+    margin-left: auto;
+    color: white;
+    font-weight: 600;
+}
+#logoutBtn{
+      margin-left: 20px;
+      
+}
+
+footer {
+    text-align: center;
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #343a40;
+    color: #fff;
+    border-radius: 8px;
+}
+
+footer p {
+    margin: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.section {
+    animation: fadeIn 0.5s ease;
+}
+/* Styles pour le tableau de recouvrement */
+#recouvrementTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#recouvrementTable th,
+#recouvrementTable td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+#recouvrementTable th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+#recouvrementTable tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+#recouvrementTable button {
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+#recouvrementTable button:hover {
+    background-color: #367c39;
+}
+#produitVente{
+      width: 96.5%;
+}
+
+/* Styles pour la section de vérification IMEI */
+#verifier {
+    margin-top: 20px;
+}
+
+#verifier h2 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+#verifier label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+#imeiAVerifier {
+    width: 96.5%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#verifierImei {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#verifierImei:hover {
+    background-color: #0056b3;
+}
+
+#resultatVerification {
+    margin-top: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#resultatVerification p {
+    margin: 5px 0;
+}
+
+#resultatVerification span {
+    font-weight: bold;
+}
+
+/* Styles pour les tableaux d'analyse des ventes */
+#topVentesSemaine, #topVentesMois, #invendusSemaine, #invendusMois, #ventesParVendeur {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+}
+
+#topVentesSemaine th, #topVentesMois th, #invendusSemaine th, #invendusMois th, #ventesParVendeur th,
+#topVentesSemaine td, #topVentesMois td, #invendusSemaine td, #invendusMois td, #ventesParVendeur td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+#topVentesSemaine th, #topVentesMois th, #invendusSemaine th, #invendusMois th, #ventesParVendeur th {
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+
+#topVentesSemaine tbody tr:nth-child(even), #topVentesMois tbody tr:nth-child(even),
+#invendusSemaine tbody tr:nth-child(even), #invendusMois tbody tr:nth-child(even), #ventesParVendeur tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
 }
