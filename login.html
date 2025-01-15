@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styleA.css">
+     <link rel="stylesheet" href="styleA.css">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -135,6 +135,10 @@
             <p>Pas encore de compte ? <a href="#" id="showRegister">Inscrivez-vous</a></p>
         </div>
            <form id="registerForm" style="display: none;" onsubmit="return handleAuth(event, 'register')">
+            <div class="input-group">
+            <label for="emailRegister">Email</label>
+            <input type="email" id="emailRegister" required>
+         </div>
              <div class="input-group">
                 <label for="usernameRegister">Nom d'utilisateur</label>
                 <input type="text" id="usernameRegister" required>
@@ -151,15 +155,16 @@
            <div id="errorMessage" class="error-message"></div>
     </div>
     <script>
-  const firebaseConfig = {
-  apiKey: "AIzaSyAyrniQKyBc9zTwUCbHlryyR411HLzbDkk",
-  authDomain: "sikaconnect-2f279.firebaseapp.com",
-  databaseURL: "https://sikaconnect-2f279-default-rtdb.firebaseio.com",
-  projectId: "sikaconnect-2f279",
-  storageBucket: "sikaconnect-2f279.firebasestorage.app",
-  messagingSenderId: "980825684625",
-  appId: "1:980825684625:web:dbf5a31b93db0d13261d30",
-  measurementId: "G-579KVT1Y97"
+// Configuration Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyBuZpGvZsXHuE2djlJtMS-aSKlZLBpMKoo",
+    authDomain: "guilgal-46426.firebaseapp.com",
+    databaseURL: "https://guilgal-46426-default-rtdb.firebaseio.com",
+    projectId: "guilgal-46426",
+    storageBucket: "guilgal-46426.firebasestorage.app",
+    messagingSenderId: "545432703753",
+    appId: "1:545432703753:web:64823e084079f1e57fb9d8",
+    measurementId: "G-0F61YDFCCY"
 };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
@@ -187,63 +192,75 @@
                 registerUser(username,password)
          }
      }
-        async function loginUser(username, password) {
-         try {
-                const adminRef = database.ref('admins');
-                const snapshot = await adminRef.once('value');
-                const admins = snapshot.val();
-                if(!admins){
-                        errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
-                        errorMessage.style.display = 'block';
-                       return;
-                }
-                const admin = Object.values(admins).find(admin => 
-                    admin.username === username && admin.password === password
-                );
-                 
 
-                if (admin) {
-                    sessionStorage.setItem('isLoggedIn', 'true');
-                    window.location.href = 'index.html';
-                } else {
-                    errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+      async function loginUser(username, password) {
+        try {
+            const adminsRef = database.ref('admins');
+            const snapshot = await adminsRef.orderByChild('username').equalTo(username).once('value');
+            const admins = snapshot.val();
+
+            if (!admins) {
+                errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+           let adminId = null;
+           let admin = null;
+           for (const id in admins) {
+               if (admins[id].password === password) {
+                   adminId = id;
+                   admin = admins[id];
+                   break;
+               }
+           }
+
+            if (admin) {
+               sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('currentUser', admin.username); // Stocker le nom d'utilisateur
+                window.location.href = 'index.html';
+             } else {
+                 errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+                errorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Erreur de connexion:', error);
+            errorMessage.textContent = 'Une erreur est survenue. Veuillez réessayer.';
+            errorMessage.style.display = 'block';
+        }
+    }
+
+        async function registerUser(username, password) {
+            try {
+                const email = document.getElementById('emailRegister').value
+                const adminRef = database.ref('admins');
+                const snapshot = await adminRef.orderByChild('username').equalTo(username).once('value');
+                const admins = snapshot.val();
+
+                if (admins) {
+                    errorMessage.textContent = 'Ce nom d\'utilisateur est déjà pris.';
                     errorMessage.style.display = 'block';
+                    return;
                 }
+
+                // Enregistrer l'utilisateur dans la base de données avec le statut "Vendeur"
+                const newAdminRef = adminRef.push();
+                 await newAdminRef.set({
+                    username: username,
+                    password: password,
+                    email: email,
+                     status: "Vendeur",
+                });
+
+
+                alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+                showLoginForm();
             } catch (error) {
-                console.error('Erreur de connexion:', error);
-                errorMessage.textContent = 'Une erreur est survenue. Veuillez réessayer.';
+                console.error('Erreur lors de l\'inscription:', error);
+                errorMessage.textContent = 'Une erreur s\'est produite lors de l\'inscription. Veuillez réessayer. ' + error.message;
                 errorMessage.style.display = 'block';
             }
         }
-
-    async function registerUser(username, password) {
-        try {
-            const adminRef = database.ref('admins');
-            const snapshot = await adminRef.once('value');
-            const admins = snapshot.val();
-               if (admins) {
-               const existingAdmin = Object.values(admins).find(admin =>
-                   admin.username === username
-                );
-                    if (existingAdmin) {
-                    errorMessage.textContent = 'Ce nom d\'utilisateur est déjà pris.';
-                        errorMessage.style.display = 'block';
-                        return;
-                  }
-            }
-            const newAdminRef = adminRef.push();
-            await newAdminRef.set({
-                username: username,
-                password: password
-            });
-            alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
-            showLoginForm();
-        } catch (error) {
-            console.error('Erreur lors de l\'inscription:', error);
-             errorMessage.textContent = 'Une erreur s\'est produite lors de l\'inscription. Veuillez réessayer.';
-              errorMessage.style.display = 'block';
-        }
-    }
 
      function showLoginForm() {
             loginForm.style.display = 'block';

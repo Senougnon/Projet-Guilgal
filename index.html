@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
 </head>
 <body>
 
@@ -37,6 +37,10 @@
             <label for="dateFinFilter">Date de fin:</label>
             <input type="date" id="dateFinFilter">
             <button id="filtrerBtn">Filtrer</button>
+        </div>
+        <div id="userStatus">
+            <span id="currentUser"></span>
+            <button id="logoutBtn" class="hidden">Déconnexion</button>
         </div>
     </header>
 

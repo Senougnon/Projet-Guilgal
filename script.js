@@ -75,29 +75,28 @@ navLinks.forEach(link => {
 
 // Fonction pour récupérer la liste des produits depuis Firebase
 function getProduits() {
-    const produitsRef = database.ref('produits');
-    produitsRef.on('value', (snapshot) => {
-      const produits = snapshot.val();
-      const produitsListe = document.getElementById('produitsListe');
-      const produitVenteSelect = document.getElementById('produitVente');
-      produitsListe.innerHTML = ''; // Vider la liste existante
-      produitVenteSelect.innerHTML = '<option value="">Sélectionnez un produit</option>';
-  
-      for (const produitId in produits) {
-        const produit = produits[produitId];
-        const option = document.createElement('option');
-        option.value = produit.nom;
-        produitsListe.appendChild(option);
-  
-        // Créer une nouvelle option pour chaque produit
-        const optionVente = document.createElement('option');
-        optionVente.value = produit.nom;
-        optionVente.text = produit.nom;
-        produitVenteSelect.appendChild(optionVente);
-      }
-    });
-  }
-  
+  const produitsRef = database.ref('produits');
+  produitsRef.on('value', (snapshot) => {
+    const produits = snapshot.val();
+    const produitsListe = document.getElementById('produitsListe');
+    const produitVenteSelect = document.getElementById('produitVente');
+    produitsListe.innerHTML = ''; // Vider la liste existante
+    produitVenteSelect.innerHTML = '<option value="">Sélectionnez un produit</option>';
+
+    for (const produitId in produits) {
+      const produit = produits[produitId];
+      const option = document.createElement('option');
+      option.value = produit.nom;
+      produitsListe.appendChild(option);
+
+      // Créer une nouvelle option pour chaque produit
+      const optionVente = document.createElement('option');
+      optionVente.value = produit.nom;
+      optionVente.text = produit.nom;
+      produitVenteSelect.appendChild(optionVente);
+    }
+  });
+}
 
 // Appeler la fonction pour initialiser la liste des produits
 getProduits();
@@ -117,6 +116,9 @@ venteForm.addEventListener('submit', function(event) {
     const boutique = boutiqueSelect.value;
     const prixTotal = quantiteVente * prixUnitaireVente;
 
+    // Récupérer le nom de l'utilisateur actuel
+    const vendeur = currentUser;
+
     // Enregistrer la vente dans Firebase
     const venteRef = database.ref(`ventes/${boutique}`).push();
     venteRef.set({
@@ -130,7 +132,7 @@ venteForm.addEventListener('submit', function(event) {
         telClient: telClient,
         statutPaiement: estPaye ? 'Payé' : 'Non payé',
         prixTotal: prixTotal,
-        vendeur: currentUser // Ajouter l'ID de l'utilisateur actuel comme vendeur
+        vendeur: vendeur // Ajouter le nom de l'utilisateur actuel comme vendeur
     })
     .then(() => {
         alert('Vente enregistrée avec succès!');
@@ -500,7 +502,7 @@ function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
             }
 
             // Résoudre la promesse avec les bénéfices, le total des ventes et les dépenses
-            resolve({ benefices, totalVentes, depenses });
+            resolve({ benefices, totalVentes, depenses             });
         });
     });
 }
@@ -901,28 +903,18 @@ function updateVentesChartToutesBoutiques() {
         });
     });
 }
-// Gestionnaire d'événements pour le bouton de déconnexion
-logoutBtn.addEventListener('click', () => {
-    firebase.auth().signOut().then(() => {
-        // Déconnexion réussie
-        currentUserSpan.textContent = '';
-        logoutBtn.classList.add('hidden');
-        afficherSection('auth'); // Affiche la section d'authentification
-    }).catch((error) => {
-        console.error("Erreur lors de la déconnexion:", error);
-    });
-});
 
-// Écouteur d'état d'authentification
-firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
+// Fonction pour vérifier si l'utilisateur est connecté
+function checkLoginStatus() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    currentUser = sessionStorage.getItem('currentUser');
+
+    if (isLoggedIn === 'true' && currentUser) {
         // Utilisateur connecté
-        currentUser = user.email;
-        currentUserId = user.uid;
         currentUserSpan.textContent = `Connecté en tant que : ${currentUser}`;
         logoutBtn.classList.remove('hidden');
         afficherSection('accueil'); // Affiche la section d'accueil
-         chargerVentesDuJour(boutiqueSelect.value);
+        chargerVentesDuJour(boutiqueSelect.value);
         chargerAlertesStock(boutiqueSelect.value);
         // Définir la date du jour comme date de début par défaut
         const today = new Date().toISOString().split('T')[0];
@@ -933,109 +925,30 @@ firebase.auth().onAuthStateChanged((user) => {
         nextWeek.setDate(nextWeek.getDate() + 7);
         dateFinFilter.value = nextWeek.toISOString().split('T')[0];
         // Déclencher l'événement 'click' sur le bouton filtrerBtn
-         filtrerBtn.click();
+        filtrerBtn.click();
     } else {
         // Utilisateur non connecté
-        currentUser = null;
-        currentUserId = null;
         currentUserSpan.textContent = '';
         logoutBtn.classList.add('hidden');
-        afficherSection('auth'); // Affiche la section d'authentification
+        window.location.href = 'login.html'; // Rediriger vers la page de connexion
     }
+}
+
+// Gestionnaire d'événements pour le bouton de déconnexion
+logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('isLoggedIn'); // Supprimer l'indicateur de connexion
+    sessionStorage.removeItem('currentUser'); // Supprimer le nom de l'utilisateur
+    currentUser = null;
+    currentUserSpan.textContent = '';
+    logoutBtn.classList.add('hidden');
+    window.location.href = 'login.html'; // Rediriger vers la page de connexion
 });
 
 // Appeler la fonction pour initialiser le graphique
 updateVentesChart('Boutique1'); // Mettre à jour le graphique pour la boutique par défaut
- // Fonction pour afficher le formulaire de connexion
-    function showLoginForm() {
-        document.getElementById('auth-section').innerHTML = `
-            <div class="auth-form-container">
-                <h2>Connexion</h2>
-                <form id="loginForm">
-                    <input type="email" id="email" placeholder="Email" required>
-                    <input type="password" id="password" placeholder="Mot de passe" required>
-                    <button type="submit">Se connecter</button>
-                </form>
-                <div class="auth-switch">
-                    <p>Pas encore de compte ? <a href="#" id="showRegister">Inscrivez-vous</a></p>
-                </div>
-            </div>
-        `;
-        attachLoginFormEvents();
-        document.getElementById('auth-section').classList.remove('hidden');
-    }
 
-    // Fonction pour afficher le formulaire d'inscription
-    function showRegisterForm() {
-        document.getElementById('auth-section').innerHTML = `
-            <div class="auth-form-container">
-                <h2>Inscription</h2>
-                <form id="registerForm">
-                    <input type="email" id="email" placeholder="Email" required>
-                    <input type="password" id="password" placeholder="Mot de passe" required>
-                    <button type="submit">S'inscrire</button>
-                </form>
-                <div class="auth-switch">
-                    <p>Déjà un compte ? <a href="#" id="showLogin">Connectez-vous</a></p>
-                </div>
-            </div>
-        `;
-        attachRegisterFormEvents();
-        document.getElementById('auth-section').classList.remove('hidden');
-    }
-
-    // Fonction pour attacher les événements du formulaire de connexion
-    function attachLoginFormEvents() {
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
-        document.getElementById('showRegister').addEventListener('click', showRegisterForm);
-    }
-
-    // Fonction pour attacher les événements du formulaire d'inscription
-    function attachRegisterFormEvents() {
-        document.getElementById('registerForm').addEventListener('submit', handleRegister);
-        document.getElementById('showLogin').addEventListener('click', showLoginForm);
-    }
-
-    // Fonction pour gérer la connexion
-    function handleLogin(event) {
-        event.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        firebase.auth().signInWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // Connexion réussie
-                console.log("Utilisateur connecté:", userCredential.user);
-                document.getElementById('auth-section').classList.add('hidden');
-            })
-            .catch((error) => {
-                // Gestion des erreurs de connexion
-                console.error("Erreur lors de la connexion:", error);
-                alert("Erreur lors de la connexion: " + error.message);
-            });
-    }
-
-    // Fonction pour gérer l'inscription
-    function handleRegister(event) {
-        event.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        firebase.auth().createUserWithEmailAndPassword(email, password)
-            .then((userCredential) => {
-                // Inscription réussie
-                console.log("Utilisateur inscrit:", userCredential.user);
-                document.getElementById('auth-section').classList.add('hidden');
-            })
-            .catch((error) => {
-                // Gestion des erreurs d'inscription
-                console.error("Erreur lors de l'inscription:", error);
-                alert("Erreur lors de l'inscription: " + error.message);
-            });
-    }
-    // Gestion des dates pour les analyses par semaine et par mois
-  
-
+// Appeler la fonction pour vérifier l'état de connexion au chargement de la page
+checkLoginStatus();
     // Fonctions pour l'analyse des ventes
 
     function getMondayOfCurrentWeek() {
@@ -1183,9 +1096,3 @@ updateVentesChart('Boutique1'); // Mettre à jour le graphique pour la boutique 
             topSellerMonthSpan.textContent = topSellerMonth;
         });
     }
-
-    // Initialiser l'affichage du formulaire de connexion au chargement de la page
-    showLoginForm();
-    afficherSection('auth');
-    // Appeler la fonction pour initialiser le graphique avec les données de toutes les boutiques
-updateVentesChartToutesBoutiques();
