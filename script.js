@@ -18,10 +18,13 @@ const database = firebase.database();
 const navLinks = document.querySelectorAll('nav ul li a');
 const sections = document.querySelectorAll('.section');
 const venteForm = document.getElementById('venteForm');
+const depenseForm = document.getElementById('depenseForm');
 const stockForm = document.getElementById('stockForm');
 const stockTable = document.getElementById('stockTable').querySelector('tbody');
 const beneficesTable = document.getElementById('beneficesTable').querySelector('tbody');
 const recouvrementTable = document.getElementById('recouvrementTable').querySelector('tbody');
+const ventesTable = document.getElementById('ventesTable').querySelector('tbody');
+const depensesTable = document.getElementById('depensesTable').querySelector('tbody');
 const boutiqueSelect = document.getElementById('boutiqueSelect');
 const dateDebut = document.getElementById('dateDebut');
 const dateFin = document.getElementById('dateFin');
@@ -139,12 +142,264 @@ venteForm.addEventListener('submit', function(event) {
         venteForm.reset();
         // Mettre à jour le stock
         mettreAJourStock(produitVente, quantiteVente, boutique, 'vente', typeVente);
+          // Recharger le tableau des ventes
+        chargerVentes(boutique);
     })
     .catch(error => {
         console.error("Erreur lors de l'enregistrement de la vente:", error);
         alert("Erreur lors de l'enregistrement de la vente.");
     });
 });
+// Fonction pour charger les ventes
+function chargerVentes(boutique) {
+    const ventesRef = database.ref(`ventes/${boutique}`);
+    ventesRef.on('value', (snapshot) => {
+        ventesTable.innerHTML = ''; // Vider le tableau
+        snapshot.forEach(childSnapshot => {
+            const vente = childSnapshot.val();
+            const row = ventesTable.insertRow();
+            row.insertCell().textContent = vente.date;
+            row.insertCell().textContent = vente.produit;
+            row.insertCell().textContent = vente.quantite;
+            row.insertCell().textContent = vente.prixUnitaire;
+            row.insertCell().textContent = vente.prixTotal;
+            row.insertCell().textContent = vente.type;
+            row.insertCell().textContent = vente.nomClient;
+            row.insertCell().textContent = vente.telClient;
+            row.insertCell().textContent = vente.statutPaiement;
+            row.insertCell().textContent = vente.vendeur;
+
+            // Ajouter les icônes d'action
+            const actionsCell = row.insertCell();
+            const actionIcons = document.createElement('div');
+            actionIcons.className = 'action-icons';
+
+            const editIcon = document.createElement('i');
+            editIcon.className = 'fas fa-edit';
+            editIcon.addEventListener('click', () => {
+                // Remplir le formulaire de vente avec les données actuelles de la vente
+                document.getElementById('dateVente').value = vente.date;
+                document.getElementById('produitVente').value = vente.produit;
+                document.getElementById('quantiteVente').value = vente.quantite;
+                document.getElementById('prixUnitaireVente').value = vente.prixUnitaire;
+                document.getElementById('typeVente').value = vente.type;
+                document.getElementById('imeiVente').value = vente.imei;
+                document.getElementById('nomClient').value = vente.nomClient;
+                document.getElementById('telClient').value = vente.telClient;
+                document.getElementById('estPaye').checked = vente.statutPaiement === 'Payé';
+
+                // Modifier le bouton pour indiquer une mise à jour
+                venteForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+
+                // Ajouter un identifiant unique au formulaire pour savoir quelle vente modifier
+                venteForm.dataset.venteId = childSnapshot.key;
+            });
+
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'fas fa-trash-alt';
+            deleteIcon.addEventListener('click', () => {
+                if (confirm(`Êtes-vous sûr de vouloir supprimer cette vente ?`)) {
+                    supprimerVente(childSnapshot.key, boutique);
+                }
+            });
+
+            actionIcons.appendChild(editIcon);
+            actionIcons.appendChild(deleteIcon);
+            actionsCell.appendChild(actionIcons);
+        });
+    });
+}
+
+// Gestionnaire d'événement pour la mise à jour d'une vente
+venteForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const venteId = venteForm.dataset.venteId;
+
+    if (venteId) {
+        // Mettre à jour la vente existante
+        const dateVente = document.getElementById('dateVente').value;
+        const produitVente = document.getElementById('produitVente').value;
+        const quantiteVente = parseInt(document.getElementById('quantiteVente').value);
+        const prixUnitaireVente = parseFloat(document.getElementById('prixUnitaireVente').value);
+        const typeVente = document.getElementById('typeVente').value;
+        const imeiVente = document.getElementById('imeiVente').value;
+        const nomClient = document.getElementById('nomClient').value;
+        const telClient = document.getElementById('telClient').value;
+        const estPaye = document.getElementById('estPaye').checked;
+        const boutique = boutiqueSelect.value;
+        const prixTotal = quantiteVente * prixUnitaireVente;
+        const vendeur = currentUser;
+
+        const venteRef = database.ref(`ventes/${boutique}/${venteId}`);
+        venteRef.update({
+            date: dateVente,
+            produit: produitVente,
+            quantite: quantiteVente,
+            prixUnitaire: prixUnitaireVente,
+            type: typeVente,
+            imei: imeiVente,
+            nomClient: nomClient,
+            telClient: telClient,
+            statutPaiement: estPaye ? 'Payé' : 'Non payé',
+            prixTotal: prixTotal,
+            vendeur: vendeur
+        })
+        .then(() => {
+            alert('Vente mise à jour avec succès!');
+            venteForm.reset();
+            venteForm.querySelector('button[type="submit"]').textContent = 'Enregistrer';
+            delete venteForm.dataset.venteId;
+            chargerVentes(boutique);
+        })
+        .catch(error => {
+            console.error("Erreur lors de la mise à jour de la vente:", error);
+            alert("Erreur lors de la mise à jour de la vente.");
+        });
+    } else {
+        // Enregistrement d'une nouvelle vente (logique existante)
+        // ...
+    }
+});
+
+// Fonction pour supprimer une vente
+function supprimerVente(venteId, boutique) {
+    const venteRef = database.ref(`ventes/${boutique}/${venteId}`);
+    venteRef.remove()
+    .then(() => {
+        alert(`Vente supprimée avec succès!`);
+        chargerVentes(boutique); // Recharger les ventes
+    })
+    .catch(error => {
+        console.error("Erreur lors de la suppression de la vente:", error);
+        alert("Erreur lors de la suppression de la vente.");
+    });
+}
+// Gestion de la soumission du formulaire de dépense
+depenseForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const dateDepense = document.getElementById('dateDepense').value;
+    const motifDepense = document.getElementById('motifDepense').value;
+    const montantDepense = parseFloat(document.getElementById('montantDepense').value);
+    const boutique = boutiqueSelect.value;
+    const vendeur = currentUser; // Récupérer le nom de l'utilisateur actuel
+
+    // Enregistrer la dépense dans Firebase
+    const depenseRef = database.ref(`depenses/${boutique}`).push();
+    depenseRef.set({
+        date: dateDepense,
+        motif: motifDepense,
+        montant: montantDepense,
+        vendeur: vendeur // Ajouter le nom de l'utilisateur actuel
+    })
+    .then(() => {
+        alert('Dépense enregistrée avec succès!');
+        depenseForm.reset();
+        chargerDepenses(boutique); // Recharger le tableau des dépenses
+    })
+    .catch(error => {
+        console.error("Erreur lors de l'enregistrement de la dépense:", error);
+        alert("Erreur lors de l'enregistrement de la dépense.");
+    });
+});
+
+// Fonction pour charger les dépenses
+function chargerDepenses(boutique) {
+    const depensesRef = database.ref(`depenses/${boutique}`);
+    depensesRef.on('value', (snapshot) => {
+        depensesTable.innerHTML = ''; // Vider le tableau
+        snapshot.forEach(childSnapshot => {
+            const depense = childSnapshot.val();
+            const row = depensesTable.insertRow();
+            row.insertCell().textContent = depense.date;
+            row.insertCell().textContent = depense.motif;
+            row.insertCell().textContent = depense.montant;
+            row.insertCell().textContent = depense.vendeur; // Afficher le nom du vendeur
+
+            // Ajouter les icônes d'action
+            const actionsCell = row.insertCell();
+            const actionIcons = document.createElement('div');
+            actionIcons.className = 'action-icons';
+
+            const editIcon = document.createElement('i');
+            editIcon.className = 'fas fa-edit';
+            editIcon.addEventListener('click', () => {
+                // Remplir le formulaire de dépense avec les données actuelles
+                document.getElementById('dateDepense').value = depense.date;
+                document.getElementById('motifDepense').value = depense.motif;
+                document.getElementById('montantDepense').value = depense.montant;
+
+                // Modifier le bouton pour indiquer une mise à jour
+                depenseForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+
+                // Ajouter un identifiant unique au formulaire pour savoir quelle dépense modifier
+                depenseForm.dataset.depenseId = childSnapshot.key;
+            });
+
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'fas fa-trash-alt';
+            deleteIcon.addEventListener('click', () => {
+                if (confirm(`Êtes-vous sûr de vouloir supprimer cette dépense ?`)) {
+                    supprimerDepense(childSnapshot.key, boutique);
+                }
+            });
+
+            actionIcons.appendChild(editIcon);
+            actionIcons.appendChild(deleteIcon);
+            actionsCell.appendChild(actionIcons);
+        });
+    });
+}
+
+// Gestionnaire d'événement pour la mise à jour d'une dépense
+depenseForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const depenseId = depenseForm.dataset.depenseId;
+
+    if (depenseId) {
+        // Mettre à jour la dépense existante
+        const dateDepense = document.getElementById('dateDepense').value;
+        const motifDepense = document.getElementById('motifDepense').value;
+        const montantDepense = parseFloat(document.getElementById('montantDepense').value);
+        const boutique = boutiqueSelect.value;
+        const vendeur = currentUser;
+
+        const depenseRef = database.ref(`depenses/${boutique}/${depenseId}`);
+        depenseRef.update({
+            date: dateDepense,
+            motif: motifDepense,
+            montant: montantDepense,
+            vendeur: vendeur
+        })
+        .then(() => {
+            alert('Dépense mise à jour avec succès!');
+            depenseForm.reset();
+            depenseForm.querySelector('button[type="submit"]').textContent = 'Enregistrer';
+            delete depenseForm.dataset.depenseId;
+            chargerDepenses(boutique);
+        })
+        .catch(error => {
+            console.error("Erreur lors de la mise à jour de la dépense:", error);
+            alert("Erreur lors de la mise à jour de la dépense.");
+        });
+    } else {
+        // Enregistrement d'une nouvelle dépense (logique existante)
+        // ...
+    }
+});
+
+// Fonction pour supprimer une dépense
+function supprimerDepense(depenseId, boutique) {
+    const depenseRef = database.ref(`depenses/${boutique}/${depenseId}`);
+    depenseRef.remove()
+    .then(() => {
+        alert(`Dépense supprimée avec succès!`);
+        chargerDepenses(boutique); // Recharger les dépenses
+    })
+    .catch(error => {
+        console.error("Erreur lors de la suppression de la dépense:", error);
+        alert("Erreur lors de la suppression de la dépense.");
+    });
+}
 
 // Gestion de la soumission du formulaire de stock
 stockForm.addEventListener('submit', function(event) {
@@ -309,7 +564,7 @@ function supprimerProduitDuStock(produit, boutique) {
 }
 
 // Charger le stock au chargement de la page
-chargerStock('Boutique1'); // Charger le stock de la boutique par défaut
+// Remplacé par la logique de chargement des boutiques
 
 // Gestion du changement de boutique
 boutiqueSelect.addEventListener('change', () => {
@@ -325,28 +580,37 @@ boutiqueSelect.addEventListener('change', () => {
     }
      chargerVentesDuJour(boutique);
      chargerAlertesStock(boutique);
+    chargerVentes(boutique);
+    chargerDepenses(boutique);
 });
 
 // Fonction pour charger les données de toutes les boutiques
 function chargerStockToutesBoutiques() {
     stockTable.innerHTML = ''; // Vider le tableau
     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
-    boutiques.forEach(boutique => {
-        const stockRef = database.ref(`stock/${boutique}`);
-        stockRef.once('value', (snapshot) => {
-            snapshot.forEach(childSnapshot => {
-                const produit = childSnapshot.key;
-                const details = childSnapshot.val();
-                const row = stockTable.insertRow();
-                row.insertCell().textContent = `${boutique} - ${produit}`;
-                row.insertCell().textContent = details.quantite;
-                row.insertCell().textContent = details.prixAchat;
-                row.insertCell().textContent = details.prixVenteDetail;
-                row.insertCell().textContent = details.prixVenteGros;
-                row.insertCell().textContent = 'Non applicable'; // Actions non applicables en mode "Toutes les boutiques"
+     const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
             });
-        });
-    });
+    
+            boutiques.forEach(boutique => {
+                const stockRef = database.ref(`stock/${boutique}`);
+                stockRef.once('value', (snapshot) => {
+                    snapshot.forEach(childSnapshot => {
+                        const produit = childSnapshot.key;
+                        const details = childSnapshot.val();
+                        const row = stockTable.insertRow();
+                        row.insertCell().textContent = `${boutique} - ${produit}`;
+                        row.insertCell().textContent = details.quantite;
+                        row.insertCell().textContent = details.prixAchat;
+                        row.insertCell().textContent = details.prixVenteDetail;
+                        row.insertCell().textContent = details.prixVenteGros;
+                        row.insertCell().textContent = 'Non applicable'; // Actions non applicables en mode "Toutes les boutiques"
+                    });
+                });
+            });
+       });
 }
 
 // Fonction pour charger les bénéfices
@@ -355,6 +619,11 @@ function chargerBenefices(boutique) {
     if (boutique === 'Toutes') {
        
         const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+        const boutiquesRef = database.ref('boutiques');
+        boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
+            });
         let beneficesToutesBoutiques = {};
         let totalVentes = 0;
 
@@ -408,6 +677,7 @@ function chargerBenefices(boutique) {
                 row.insertCell().textContent = benefices[produit].toFixed(2);
             }
         };
+      });
     } else {
         // Logique pour une seule boutique
         const dateDebut = document.getElementById('dateDebut').value;
@@ -565,35 +835,42 @@ boutiqueSelect.addEventListener('change', () => {
 function chargerRecouvrementsToutesBoutiques() {
     recouvrementTable.innerHTML = '';
     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
-    boutiques.forEach(boutique => {
-        const recouvrementsRef = database.ref(`ventes/${boutique}`);
-        recouvrementsRef.on('value', (snapshot) => {
-            snapshot.forEach(childSnapshot => {
-                const vente = childSnapshot.val();
-                if (vente.statutPaiement === 'Non payé') {
-                    const row = recouvrementTable.insertRow();
-                    row.insertCell().textContent = `(${boutique}) ${vente.nomClient}`;
-                    row.insertCell().textContent = vente.telClient;
-                    row.insertCell().textContent = vente.produit;
-                    row.insertCell().textContent = vente.prixTotal.toFixed(2);
-                    row.insertCell().textContent = vente.date;
-                    row.insertCell().textContent = vente.statutPaiement;
-
-                    const payerButton = document.createElement('button');
-                    payerButton.textContent = 'Payer';
-                    payerButton.addEventListener('click', () => {
-                        marquerCommePaye(childSnapshot.key, boutique);
-                    });
-                    const actionsCell = row.insertCell();
-                    actionsCell.appendChild(payerButton);
-                }
+    const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
             });
-        });
-    });
+            boutiques.forEach(boutique => {
+                const recouvrementsRef = database.ref(`ventes/${boutique}`);
+                recouvrementsRef.on('value', (snapshot) => {
+                    snapshot.forEach(childSnapshot => {
+                        const vente = childSnapshot.val();
+                        if (vente.statutPaiement === 'Non payé') {
+                            const row = recouvrementTable.insertRow();
+                            row.insertCell().textContent = `(${boutique}) ${vente.nomClient}`;
+                            row.insertCell().textContent = vente.telClient;
+                            row.insertCell().textContent = vente.produit;
+                            row.insertCell().textContent = vente.prixTotal.toFixed(2);
+                            row.insertCell().textContent = vente.date;
+                            row.insertCell().textContent = vente.statutPaiement;
+
+                            const payerButton = document.createElement('button');
+                            payerButton.textContent = 'Payer';
+                            payerButton.addEventListener('click', () => {
+                                marquerCommePaye(childSnapshot.key, boutique);
+                            });
+                            const actionsCell = row.insertCell();
+                            actionsCell.appendChild(payerButton);
+                        }
+                    });
+                });
+            });
+       });
 }
 
 // Charger les recouvrements au chargement de la page
-chargerRecouvrements('Boutique1'); // Charger les recouvrements de la boutique par défaut
+// Remplacé par la logique de chargement des boutiques
+
 // Fonction pour charger les ventes du jour
 function chargerVentesDuJour(boutique) {
     const ventesRef = database.ref(`ventes/${boutique}`);
@@ -632,39 +909,44 @@ function chargerAlertesStock(boutique) {
 }
 
 // Charger les ventes du jour et les alertes de stock au chargement de la page
-chargerVentesDuJour('Boutique1'); // Charger les ventes du jour de la boutique par défaut
-chargerAlertesStock('Boutique1'); // Charger les alertes de stock de la boutique par défaut
+// Remplacé par la logique de chargement des boutiques
 
 // Gestion de la vérification IMEI
 verifierImeiButton.addEventListener('click', () => {
     const imeiAVerifier = imeiAVerifierInput.value;
+     const boutiquesRef = database.ref('boutiques');
     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
-    let imeiTrouve = false;
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
+            });
+        let imeiTrouve = false;
 
-    boutiques.forEach(boutique => {
-        const ventesRef = database.ref(`ventes/${boutique}`);
-        ventesRef.once('value', (snapshot) => {
-            snapshot.forEach(childSnapshot => {
-                const vente = childSnapshot.val();
-                if (vente.imei === imeiAVerifier) {
-                    imeiTrouve = true;
-                    produitResultatSpan.textContent = vente.produit;
-                    dateVenteResultatSpan.textContent = vente.date;
-                    nomClientResultatSpan.textContent = vente.nomClient;
-                    statutPaiementResultatSpan.textContent = vente.statutPaiement;
+        boutiques.forEach(boutique => {
+            const ventesRef = database.ref(`ventes/${boutique}`);
+            ventesRef.once('value', (snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    const vente = childSnapshot.val();
+                    if (vente.imei === imeiAVerifier) {
+                        imeiTrouve = true;
+                        produitResultatSpan.textContent = vente.produit;
+                        dateVenteResultatSpan.textContent = vente.date;
+                        nomClientResultatSpan.textContent = vente.nomClient;
+                        statutPaiementResultatSpan.textContent = vente.statutPaiement;
+                        resultatVerificationDiv.classList.remove('hidden');
+                    }
+                });
+
+                if (!imeiTrouve) {
+                    produitResultatSpan.textContent = 'IMEI non trouvé';
+                    dateVenteResultatSpan.textContent = '';
+                    nomClientResultatSpan.textContent = '';
+                    statutPaiementResultatSpan.textContent = '';
                     resultatVerificationDiv.classList.remove('hidden');
                 }
             });
-
-            if (!imeiTrouve) {
-                produitResultatSpan.textContent = 'IMEI non trouvé';
-                dateVenteResultatSpan.textContent = '';
-                nomClientResultatSpan.textContent = '';
-                statutPaiementResultatSpan.textContent = '';
-                resultatVerificationDiv.classList.remove('hidden');
-            }
         });
-    });
+     });
 });
 
 // Fonction pour mettre à jour le graphique des ventes
@@ -766,87 +1048,104 @@ function chargerBeneficesToutesBoutiques(dateDebut, dateFin) {
     depensesSpan.textContent = '0';
     beneficeTotalSpan.textContent = '0';
     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
-    let beneficesToutesBoutiques = {};
-
-    const fusionnerBenefices = (boutique, benefices, depenses) => {
-        for (const produit in benefices) {
-            if (!beneficesToutesBoutiques[produit]) {
-                beneficesToutesBoutiques[produit] = 0;
-            }
-            beneficesToutesBoutiques[produit] += benefices[produit];
-        }
-        depensesSpan.textContent = (parseFloat(depensesSpan.textContent) + depenses).toFixed(2);
-        actualiserTableauBenefices(beneficesToutesBoutiques);
-    };
-
-    boutiques.forEach(boutique => {
-        calculerEtAfficherBenefices(boutique, dateDebut, dateFin)
-            .then(({ benefices, depenses }) => {
-                fusionnerBenefices(boutique, benefices, depenses);
-            })
-            .catch(error => {
-                console.error("Erreur lors du calcul des bénéfices pour", boutique, error);
+     const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
             });
-    });
+        let beneficesToutesBoutiques = {};
 
-    // Calculer le bénéfice total pour toutes les boutiques
-    database.ref('benefices').once('value', (snapshot) => {
-        const allBenefices = snapshot.val();
-        let beneficeTotal = 0;
-        for (const boutiqueKey in allBenefices) {
-            for (const dateKey in allBenefices[boutiqueKey]) {
-                if (dateKey >= dateDebut && dateKey <= dateFin) {
-                    beneficeTotal += parseFloat(allBenefices[boutiqueKey][dateKey].total) || 0;
+        const fusionnerBenefices = (boutique, benefices, depenses) => {
+            for (const produit in benefices) {
+                if (!beneficesToutesBoutiques[produit]) {
+                    beneficesToutesBoutiques[produit] = 0;
+                }
+                beneficesToutesBoutiques[produit] += benefices[produit];
+            }
+            depensesSpan.textContent = (parseFloat(depensesSpan.textContent) + depenses).toFixed(2);
+            actualiserTableauBenefices(beneficesToutesBoutiques);
+        };
+
+        boutiques.forEach(boutique => {
+            calculerEtAfficherBenefices(boutique, dateDebut, dateFin)
+                .then(({ benefices, depenses }) => {
+                    fusionnerBenefices(boutique, benefices, depenses);
+                })
+                .catch(error => {
+                    console.error("Erreur lors du calcul des bénéfices pour", boutique, error);
+                });
+        });
+
+        // Calculer le bénéfice total pour toutes les boutiques
+        database.ref('benefices').once('value', (snapshot) => {
+            const allBenefices = snapshot.val();
+            let beneficeTotal = 0;
+            for (const boutiqueKey in allBenefices) {
+                for (const dateKey in allBenefices[boutiqueKey]) {
+                    if (dateKey >= dateDebut && dateKey <= dateFin) {
+                        beneficeTotal += parseFloat(allBenefices[boutiqueKey][dateKey].total) || 0;
+                    }
                 }
             }
-        }
-        beneficeTotalSpan.textContent = beneficeTotal.toFixed(2);
-    });
+            beneficeTotalSpan.textContent = beneficeTotal.toFixed(2);
+        });
+     });
 }
 
 function chargerRecouvrementsToutesBoutiques() {
     recouvrementTable.innerHTML = '';
-    const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
-    boutiques.forEach(boutique => {
-        const recouvrementsRef = database.ref(`ventes/${boutique}`);
-        recouvrementsRef.on('value', (snapshot) => {
-            snapshot.forEach(childSnapshot => {
-                const vente = childSnapshot.val();
-                if (vente.statutPaiement === 'Non payé' && vente.date >= dateDebutFilter.value && vente.date <= dateFinFilter.value) {
-                    const row = recouvrementTable.insertRow
-                    row.insertCell().textContent = `(${boutique}) ${vente.nomClient}`;
-                    row.insertCell().textContent = vente.telClient;
-                    row.insertCell().textContent = vente.produit;
-                    row.insertCell().textContent = vente.prixTotal.toFixed(2);
-                    row.insertCell().textContent = vente.date;
-                    row.insertCell().textContent = vente.statutPaiement;
-                    const payerButton = document.createElement('button');
-                    payerButton.textContent = 'Payer';
-                    payerButton.addEventListener('click', () => {
-                        marquerCommePaye(childSnapshot.key, boutique);
-                    });
-                    row.insertCell().appendChild(payerButton);
-                }
+     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+     const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
+            });
+        boutiques.forEach(boutique => {
+            const recouvrementsRef = database.ref(`ventes/${boutique}`);
+            recouvrementsRef.on('value', (snapshot) => {
+                snapshot.forEach(childSnapshot => {
+                    const vente = childSnapshot.val();
+                    if (vente.statutPaiement === 'Non payé' && vente.date >= dateDebutFilter.value && vente.date <= dateFinFilter.value) {
+                        const row = recouvrementTable.insertRow
+                        row.insertCell().textContent = `(${boutique}) ${vente.nomClient}`;
+                        row.insertCell().textContent = vente.telClient;
+                        row.insertCell().textContent = vente.produit;
+                        row.insertCell().textContent = vente.prixTotal.toFixed(2);
+                        row.insertCell().textContent = vente.date;
+                        row.insertCell().textContent = vente.statutPaiement;
+                        const payerButton = document.createElement('button');
+                        payerButton.textContent = 'Payer';
+                        payerButton.addEventListener('click', () => {
+                            marquerCommePaye(childSnapshot.key, boutique);
+                        });
+                        row.insertCell().appendChild(payerButton);
+                    }
+                });
             });
         });
-    });
+     });
 }
 
 function chargerVentesDuJourToutesBoutiques() {
     const today = new Date().toISOString().split('T')[0];
     let ventesDuJourTotal = 0;
     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
-
-    boutiques.forEach(boutique => {
-        const ventesRef = database.ref(`ventes/${boutique}`);
-        ventesRef.once('value', (snapshot) => {
-            const ventes = snapshot.val();
-            for (const venteId in ventes) {
-                if (ventes[venteId].date === today) {
-                    ventesDuJourTotal++;
+    const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
+            });
+        boutiques.forEach(boutique => {
+            const ventesRef = database.ref(`ventes/${boutique}`);
+            ventesRef.once('value', (snapshot) => {
+                const ventes = snapshot.val();
+                for (const venteId in ventes) {
+                    if (ventes[venteId].date === today) {
+                        ventesDuJourTotal++;
+                    }
                 }
-            }
-            ventesJourSpan.textContent = ventesDuJourTotal;
+                ventesJourSpan.textContent = ventesDuJourTotal;
+            });
         });
     });
 }
@@ -855,68 +1154,75 @@ function chargerVentesDuJourToutesBoutiques() {
 function updateVentesChartToutesBoutiques() {
     const ventesParJour = {};
     const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+    const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
+            });
 
-    const promises = boutiques.map(boutique => {
-        return new Promise((resolve) => {
-            const ventesRef = database.ref(`ventes/${boutique}`);
-            ventesRef.once('value', (snapshot) => {
-                const ventes = snapshot.val();
-                for (const venteId in ventes) {
-                    const date = ventes[venteId].date;
-                    if (!ventesParJour[date]) {
-                        ventesParJour[date] = 0;
+        const promises = boutiques.map(boutique => {
+            return new Promise((resolve) => {
+                const ventesRef = database.ref(`ventes/${boutique}`);
+                ventesRef.once('value', (snapshot) => {
+                    const ventes = snapshot.val();
+                    for (const venteId in ventes) {
+                        const date = ventes[venteId].date;
+                        if (!ventesParJour[date]) {
+                            ventesParJour[date] = 0;
+                        }
+                        ventesParJour[date]++;
                     }
-                    ventesParJour[date]++;
-                }
-                resolve();
+                    resolve();
+                });
             });
         });
-    });
 
-    Promise.all(promises).then(() => {
-        const labels = Object.keys(ventesParJour);
-        const data = Object.values(ventesParJour);
+        Promise.all(promises).then(() => {
+            const labels = Object.keys(ventesParJour);
+            const data = Object.values(ventesParJour);
 
-        const ctx = document.getElementById('ventesChart').getContext('2d');
-        if (window.ventesChart) {
-            window.ventesChart.destroy();
-        }
-        window.ventesChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Nombre de ventes par jour (Toutes les boutiques)',
-                    data: data,
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
+            const ctx = document.getElementById('ventesChart').getContext('2d');
+            if (window.ventesChart) {
+                window.ventesChart.destroy();
+            }
+            window.ventesChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nombre de ventes par jour (Toutes les boutiques)',
+                        data: data,
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
+            });
         });
     });
 }
 
 // Fonction pour vérifier si l'utilisateur est connecté
-function checkLoginStatus() {
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
-    currentUser = sessionStorage.getItem('currentUser');
-
-    if (isLoggedIn === 'true' && currentUser) {
-        // Utilisateur connecté
-        currentUserSpan.textContent = `Connecté en tant que : ${currentUser}`;
-        logoutBtn.classList.remove('hidden');
-        afficherSection('accueil'); // Affiche la section d'accueil
-        chargerVentesDuJour(boutiqueSelect.value);
-        chargerAlertesStock(boutiqueSelect.value);
-        // Définir la date du jour comme date de début par défaut
+// Fonction pour charger les noms des boutiques dans le sélecteur
+function loadBoutiqueNames() {
+    const boutiquesRef = database.ref('boutiques');
+    boutiquesRef.once('value').then((snapshot) => {
+        boutiqueSelect.innerHTML = '<option value="Toutes">Toutes les boutiques</option>'; // Réinitialiser les options
+        snapshot.forEach(childSnapshot => {
+            const boutique = childSnapshot.val();
+            const option = document.createElement('option');
+            option.value = childSnapshot.key; // Utilisez la clé de la boutique comme valeur
+            option.text = boutique.name;
+            boutiqueSelect.appendChild(option);
+        });
+         // Définir la date du jour comme date de début par défaut
         const today = new Date().toISOString().split('T')[0];
         dateDebutFilter.value = today;
 
@@ -924,8 +1230,21 @@ function checkLoginStatus() {
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
         dateFinFilter.value = nextWeek.toISOString().split('T')[0];
-        // Déclencher l'événement 'click' sur le bouton filtrerBtn
-        filtrerBtn.click();
+        // Déclencher l'événement 'change' sur boutiqueSelect
+        boutiqueSelect.dispatchEvent(new Event('change'));
+    });
+}
+
+function checkLoginStatus() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    currentUser = sessionStorage.getItem('currentUser');
+    if (isLoggedIn === 'true' && currentUser) {
+        // Utilisateur connecté
+        currentUserSpan.textContent = `Connecté en tant que : ${currentUser}`;
+        logoutBtn.classList.remove('hidden');
+         loadBoutiqueNames()
+        afficherSection('accueil'); // Affiche la section d'accueil
+       
     } else {
         // Utilisateur non connecté
         currentUserSpan.textContent = '';
@@ -945,7 +1264,7 @@ logoutBtn.addEventListener('click', () => {
 });
 
 // Appeler la fonction pour initialiser le graphique
-updateVentesChart('Boutique1'); // Mettre à jour le graphique pour la boutique par défaut
+// Remplacé par la logique de chargement des boutiques
 
 // Appeler la fonction pour vérifier l'état de connexion au chargement de la page
 checkLoginStatus();
@@ -1096,3 +1415,96 @@ checkLoginStatus();
             topSellerMonthSpan.textContent = topSellerMonth;
         });
     }
+// Fonction pour générer et imprimer le PDF d'un tableau
+function printTableToPDF(tableId) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const table = document.getElementById(tableId);
+
+    // Titre pour le tableau (vous pouvez le personnaliser)
+    let title = '';
+    switch (tableId) {
+        case 'ventesTable':
+            title = 'Liste des ventes';
+            break;
+        case 'stockTable':
+            title = 'Stock';
+            break;
+        case 'beneficesTable':
+            title = 'Bénéfices';
+            break;
+        case 'recouvrementTable':
+            title = 'Recouvrements';
+            break;
+         case 'depensesTable':
+            title = 'Dépenses';
+            break;
+         case 'topVentesSemaine':
+            title = 'Top des ventes par semaine';
+            break;
+         case 'topVentesMois':
+            title = 'Top des ventes par mois';
+            break;
+         case 'invendusSemaine':
+            title = 'Produits invendus cette semaine';
+            break;
+         case 'invendusMois':
+            title = 'Produits invendus ce mois';
+            break;
+         case 'ventesParVendeur':
+            title = 'Ventes par vendeur';
+            break;
+        default:
+            title = 'Tableau';
+    }
+
+    // Ajouter le titre au document
+    doc.text(title, 14, 15);
+
+    // Générer le tableau PDF à partir du tableau HTML
+    doc.autoTable({ html: '#' + tableId, startY: 25 });
+
+    // Ouvrir le PDF dans un nouvel onglet
+    doc.output('dataurlnewwindow');
+}
+
+// Gestionnaires d'événements pour les boutons d'impression
+document.getElementById('printVentes').addEventListener('click', function() {
+    printTableToPDF('ventesTable');
+});
+
+document.getElementById('printStock').addEventListener('click', function() {
+    printTableToPDF('stockTable');
+});
+
+document.getElementById('printBenefices').addEventListener('click', function() {
+    printTableToPDF('beneficesTable');
+});
+
+document.getElementById('printRecouvrement').addEventListener('click', function() {
+    printTableToPDF('recouvrementTable');
+});
+
+document.getElementById('printDepenses').addEventListener('click', function() {
+    printTableToPDF('depensesTable');
+});
+
+document.getElementById('printTopVentesSemaine').addEventListener('click', function() {
+    printTableToPDF('topVentesSemaine');
+});
+
+document.getElementById('printTopVentesMois').addEventListener('click', function() {
+    printTableToPDF('topVentesMois');
+});
+
+document.getElementById('printInvendusSemaine').addEventListener('click', function() {
+    printTableToPDF('invendusSemaine');
+});
+
+document.getElementById('printInvendusMois').addEventListener('click', function() {
+    printTableToPDF('invendusMois');
+});
+
+document.getElementById('printVentesParVendeur').addEventListener('click', function() {
+    printTableToPDF('ventesParVendeur');
+});
