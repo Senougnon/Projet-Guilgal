@@ -52,6 +52,9 @@ const invendusMoisTable = document.getElementById('invendusMois').querySelector(
 const ventesParVendeurTable = document.getElementById('ventesParVendeur').querySelector('tbody');
 const topSellerWeekSpan = document.getElementById('topSellerWeek');
 const topSellerMonthSpan = document.getElementById('topSellerMonth');
+const capitalGeneralSpan = document.getElementById('capitalGeneral');
+const beneficeGeneralSpan = document.getElementById('beneficeGeneral');
+
 // Variables pour stocker l'état de l'utilisateur
 let currentUser = null;
 let currentUserId = null;
@@ -407,6 +410,8 @@ stockForm.addEventListener('submit', function(event) {
     const produit = document.getElementById('produitStock').value;
     const quantite = parseInt(document.getElementById('quantiteStock').value);
     const prixAchat = parseFloat(document.getElementById('prixAchat').value);
+    const stockInitial = parseInt(document.getElementById('stockInitial').value);
+    const approvisionnement = parseInt(document.getElementById('approvisionnement').value);
     const boutique = boutiqueSelect.value;
 
     // Ajouter le produit au stock dans Firebase
@@ -414,11 +419,14 @@ stockForm.addEventListener('submit', function(event) {
     stockRef.once('value', (snapshot) => {
         const existingStock = snapshot.val();
         if (existingStock) {
-            // Le produit existe déjà, mettre à jour la quantité
+            // Le produit existe déjà, mettre à jour la quantité et l'approvisionnement
             const newQuantite = existingStock.quantite + quantite;
+            const newApprovisionnement = existingStock.approvisionnement + approvisionnement;
             stockRef.update({
                 quantite: newQuantite,
                 prixAchat: prixAchat,
+                stockInitial: existingStock.stockInitial === undefined ? 0 : existingStock.stockInitial, // Garder le stock initial existant ou initialiser à 0 si non défini
+                approvisionnement: newApprovisionnement,
                 prixVenteDetail: prixAchat * 1.20, // Calcul du prix de vente (détail)
                 prixVenteGros: prixAchat * 1.15 // Calcul du prix de vente (gros)
             })
@@ -426,6 +434,7 @@ stockForm.addEventListener('submit', function(event) {
                 alert('Stock mis à jour avec succès!');
                 stockForm.reset();
                 chargerStock(boutique); // Recharger le stock
+                updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général
             })
             .catch(error => {
                 console.error("Erreur lors de la mise à jour du stock:", error);
@@ -436,6 +445,8 @@ stockForm.addEventListener('submit', function(event) {
             stockRef.set({
                 quantite: quantite,
                 prixAchat: prixAchat,
+                stockInitial: stockInitial,
+                approvisionnement: approvisionnement,
                 prixVenteDetail: prixAchat * 1.20, // Calcul du prix de vente (détail)
                 prixVenteGros: prixAchat * 1.15 // Calcul du prix de vente (gros)
             })
@@ -443,6 +454,7 @@ stockForm.addEventListener('submit', function(event) {
                 alert('Produit ajouté au stock avec succès!');
                 stockForm.reset();
                 chargerStock(boutique); // Recharger le stock
+                updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général
             })
             .catch(error => {
                 console.error("Erreur lors de l'ajout du produit au stock:", error);
@@ -483,7 +495,7 @@ function mettreAJourStock(produit, quantite, boutique, typeOperation, typeVente)
                         // Mettre à jour le prix de vente si c'est une vente au détail
                        return stockActuel;
                     } else if (typeVente === 'gros') {
-                        
+
                        return stockActuel;
                     }
                 } else {
@@ -502,6 +514,7 @@ function mettreAJourStock(produit, quantite, boutique, typeOperation, typeVente)
         } else if (committed) {
             console.log("Stock mis à jour avec succès.");
             chargerStock(boutique);
+            updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général après vente
         } else {
             console.log("La transaction de mise à jour du stock a été annulée.");
         }
@@ -518,7 +531,9 @@ function chargerStock(boutique) {
             const details = childSnapshot.val();
             const row = stockTable.insertRow();
             row.insertCell().textContent = produit;
-            row.insertCell().textContent = details.quantite;
+            row.insertCell().textContent = details.stockInitial !== undefined ? details.stockInitial : 'N/A';
+            row.insertCell().textContent = details.approvisionnement !== undefined ? details.approvisionnement : 'N/A';
+            row.insertCell().textContent = details.quantite; // Stock final est la quantité actuelle
             row.insertCell().textContent = details.prixAchat;
             row.insertCell().textContent = details.prixVenteDetail;
             row.insertCell().textContent = details.prixVenteGros;
@@ -530,6 +545,8 @@ function chargerStock(boutique) {
                 document.getElementById('produitStock').value = produit;
                 document.getElementById('quantiteStock').value = details.quantite;
                 document.getElementById('prixAchat').value = details.prixAchat;
+                document.getElementById('stockInitial').value = details.stockInitial !== undefined ? details.stockInitial : 0;
+                document.getElementById('approvisionnement').value = details.approvisionnement !== undefined ? details.approvisionnement : 0;
                 // Optionnel : Modifier le bouton pour indiquer une mise à jour
                 stockForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
 
@@ -547,6 +564,7 @@ function chargerStock(boutique) {
             });
             actionsCell.appendChild(supprimerButton);
         });
+         updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général après chargement du stock
     });
 }
 // Fonction pour supprimer un produit du stock
@@ -556,6 +574,7 @@ function supprimerProduitDuStock(produit, boutique) {
     .then(() => {
         alert(`${produit} supprimé du stock avec succès!`);
         chargerStock(boutique); // Recharger le stock
+        updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général après suppression
     })
     .catch(error => {
         console.error("Erreur lors de la suppression du produit du stock:", error);
@@ -572,16 +591,17 @@ boutiqueSelect.addEventListener('change', () => {
     if (boutique === 'Toutes') {
         chargerStockToutesBoutiques();
          chargerBenefices('Toutes');
-         
+
     } else {
         chargerStock(boutique);
         chargerBenefices(boutique);
-        
+
     }
      chargerVentesDuJour(boutique);
      chargerAlertesStock(boutique);
     chargerVentes(boutique);
     chargerDepenses(boutique);
+     updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général au changement de boutique
 });
 
 // Fonction pour charger les données de toutes les boutiques
@@ -593,7 +613,7 @@ function chargerStockToutesBoutiques() {
          snapshot.forEach(childSnapshot => {
                 boutiques.push(childSnapshot.key);
             });
-    
+
             boutiques.forEach(boutique => {
                 const stockRef = database.ref(`stock/${boutique}`);
                 stockRef.once('value', (snapshot) => {
@@ -602,6 +622,8 @@ function chargerStockToutesBoutiques() {
                         const details = childSnapshot.val();
                         const row = stockTable.insertRow();
                         row.insertCell().textContent = `${boutique} - ${produit}`;
+                         row.insertCell().textContent = details.stockInitial !== undefined ? details.stockInitial : 'N/A';
+                        row.insertCell().textContent = details.approvisionnement !== undefined ? details.approvisionnement : 'N/A';
                         row.insertCell().textContent = details.quantite;
                         row.insertCell().textContent = details.prixAchat;
                         row.insertCell().textContent = details.prixVenteDetail;
@@ -611,13 +633,14 @@ function chargerStockToutesBoutiques() {
                 });
             });
        });
+        updateCapitalGeneralAndBeneficeGeneral('Toutes'); // Mettre à jour le capital et bénéfice général pour toutes les boutiques
 }
 
 // Fonction pour charger les bénéfices
 function chargerBenefices(boutique) {
      beneficesTable.innerHTML = ''; // Vider le tableau
     if (boutique === 'Toutes') {
-       
+
         const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
         const boutiquesRef = database.ref('boutiques');
         boutiquesRef.once('value').then((snapshot) => {
@@ -1026,7 +1049,7 @@ filtrerBtn.addEventListener('click', () => {
         getUnsoldProducts(boutique, dateDebut, dateFin, 'week');
         getUnsoldProducts(boutique, dateDebut, dateFin, 'month');
         getSalesBySeller(boutique, dateDebut, dateFin);
-        
+
     } else {
         chargerStock(boutique);
         chargerBenefices(boutique, dateDebut, dateFin);
@@ -1244,7 +1267,7 @@ function checkLoginStatus() {
         logoutBtn.classList.remove('hidden');
          loadBoutiqueNames()
         afficherSection('accueil'); // Affiche la section d'accueil
-       
+
     } else {
         // Utilisateur non connecté
         currentUserSpan.textContent = '';
@@ -1283,7 +1306,7 @@ checkLoginStatus();
     }
 
     function getTopSellingProducts(boutique, startDate, endDate, topN, period) {
-      
+
         const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
         ventesRef.once('value', (snapshot) => {
             const allVentes = snapshot.val();
@@ -1325,7 +1348,7 @@ checkLoginStatus();
     }
 
     function getUnsoldProducts(boutique, startDate, endDate, period) {
-       
+
         const stockRef = boutique === 'Toutes' ? database.ref('stock') : database.ref(`stock/${boutique}`);
         const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
 
@@ -1375,7 +1398,7 @@ checkLoginStatus();
     }
 
    function getSalesBySeller(boutique, startDate, endDate) {
-      
+
         const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
         ventesRef.once('value', (snapshot) => {
             const allVentes = snapshot.val();
@@ -1508,3 +1531,23 @@ document.getElementById('printInvendusMois').addEventListener('click', function(
 document.getElementById('printVentesParVendeur').addEventListener('click', function() {
     printTableToPDF('ventesParVendeur');
 });
+
+// Fonction pour mettre à jour le capital général et le bénéfice général
+function updateCapitalGeneralAndBeneficeGeneral(boutique) {
+    let capitalGeneral = 0;
+    let beneficeGeneralEstime = 0;
+    const stockRef = boutique === 'Toutes' ? database.ref('stock') : database.ref(`stock/${boutique}`);
+
+    stockRef.once('value', (snapshot) => {
+        const stockData = snapshot.val();
+        if (stockData) {
+            for (const produit in stockData) {
+                const details = stockData[produit];
+                capitalGeneral += (details.stockInitial !== undefined ? details.stockInitial : 0) * details.prixAchat; // Capital basé sur stock initial et prix d'achat
+                beneficeGeneralEstime += details.quantite * (details.prixVenteDetail - details.prixAchat); // Bénéfice estimé si tout le stock actuel est vendu au détail
+            }
+        }
+        capitalGeneralSpan.textContent = capitalGeneral.toFixed(2);
+        beneficeGeneralSpan.textContent = beneficeGeneralEstime.toFixed(2);
+    });
+}

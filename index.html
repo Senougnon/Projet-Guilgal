@@ -63,47 +63,55 @@
                         <h4>Meilleur vendeur de la semaine : <span id="topSellerWeek"></span></h4>
                          <h4>Meilleur vendeur du mois : <span id="topSellerMonth"></span></h4>
                         </div>
+                 <div class="card">
+                    <h3>Capital Général</h3>
+                    <p id="capitalGeneral"></p>
+                </div>
+                <div class="card">
+                    <h3>Bénéfice Général Estimé</h3>
+                    <p id="beneficeGeneral"></p>
+                </div>
                 </div>
                 <div>
                   <canvas id="ventesChart" width="400" height="200"></canvas>
                 </div>
             </section>
-    
+
             <section id="ventes" class="section hidden">
                 <h2>Enregistrer une vente</h2>
                 <form id="venteForm">
                     <label for="dateVente">Date:</label>
                     <input type="date" id="dateVente" required><br>
-    
+
                     <label for="produitVente">Produit:</label>
                     <select id="produitVente" required>
                         <option value="">Sélectionnez un produit</option>
                     </select><br>
-    
+
                     <label for="quantiteVente">Quantité:</label>
                     <input type="number" id="quantiteVente" min="1" required><br>
-    
+
                     <label for="prixUnitaireVente">Prix Unitaire:</label>
                     <input type="number" id="prixUnitaireVente" min="0" required><br>
-    
+
                     <label for="typeVente">Type de vente:</label>
                     <select id="typeVente">
                         <option value="detail">Détail</option>
                         <option value="gros">Gros</option>
                     </select><br>
-    
+
                     <label for="imeiVente">IMEI:</label>
                     <input type="text" id="imeiVente" required><br>
-    
+
                     <label for="nomClient">Nom du Client:</label>
                     <input type="text" id="nomClient"><br>
-    
+
                     <label for="telClient">Téléphone Client :</label>
                     <input type="tel" id="telClient" name="tel"  ><br>
-    
+
                     <label for="estPaye">Payé:</label>
                     <input type="checkbox" id="estPaye" checked><br>
-    
+
                     <button type="submit">Enregistrer</button>
                 </form>
                  <!-- Tableau pour afficher les ventes -->
@@ -138,13 +146,13 @@
                 <form id="depenseForm">
                     <label for="dateDepense">Date :</label>
                     <input type="date" id="dateDepense" required><br>
-    
+
                     <label for="motifDepense">Motif :</label>
                     <input type="text" id="motifDepense" required><br>
-    
+
                     <label for="montantDepense">Montant :</label>
                     <input type="number" id="montantDepense" min="0" required><br>
-    
+
                     <button type="submit">Enregistrer</button>
                 </form>
                 <div class="table-header">
@@ -166,14 +174,18 @@
                     </tbody>
                 </table>
             </section>
-    
+
             <section id="stock" class="section hidden">
                 <h2>Gestion du stock</h2>
                 <form id="stockForm">
                     <label for="produitStock">Produit:</label>
                     <input type="text" id="produitStock" required list="produitsListe" autocomplete="off"><br>
                      <datalist id="produitsListe"></datalist>
-                    <label for="quantiteStock">Quantité:</label>
+                    <label for="stockInitial">Stock Initial:</label>
+                    <input type="number" id="stockInitial" min="0" required><br>
+                    <label for="approvisionnement">Approvisionnement:</label>
+                    <input type="number" id="approvisionnement" min="0" required><br>
+                    <label for="quantiteStock">Quantité (Stock Final):</label>
                     <input type="number" id="quantiteStock" min="0" required><br>
                     <label for="prixAchat">Prix d'achat:</label>
                     <input type="number" id="prixAchat" min="0" required><br>
@@ -187,7 +199,9 @@
                     <thead>
                         <tr>
                             <th>Produit</th>
-                            <th>Quantité</th>
+                            <th>Stock Initial</th>
+                            <th>Approvisionnement</th>
+                            <th>Stock Final</th>
                             <th>Prix d'achat unitaire</th>
                             <th>Prix de vente unitaire (détail)</th>
                             <th>Prix de vente unitaire (gros)</th>
@@ -198,7 +212,7 @@
                     </tbody>
                 </table>
             </section>
-    
+
             <section id="benefices" class="section hidden">
                 <h2>Bénéfices</h2>
                  <label for="dateDebut">Date de début:</label>
@@ -225,7 +239,7 @@
                   </table>
                 </div>
             </section>
-    
+
             <section id="recouvrement" class="section hidden">
                 <h2>Recouvrement</h2>
                 <div class="table-header">
@@ -262,7 +276,7 @@
             </section>
              <section id="analyse" class="section hidden">
                 <h2>Analyse des ventes</h2>
-    
+
                 <h3>Top des ventes</h3>
                 <div class="card">
                     <h4>Par semaine</h4>
@@ -300,7 +314,7 @@
                         </tbody>
                     </table>
                 </div>
-    
+
                 <h3>Produits invendus</h3>
                 <div class="card">
                     <h4>Cette semaine</h4>
@@ -353,11 +367,11 @@
                     </div>
             </section>
         </main>
-    
+
         <footer>
             <p>© 2023 Gestion de Boutique</p>
         </footer>
-    
+
         <script src="script.js"></script>
     </body>
     </html>
