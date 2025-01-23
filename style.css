@@ -254,6 +254,14 @@ button:hover {
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+#statusMessage {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background-color: #d4edda; /* Default success background */
+    color: #155724; /* Default success text color */
+    border: 1px solid #c3e6cb; /* Default success border */
+}
 
 /* Style pour le modal d'authentification */
 /* Styles for the authentication section */
@@ -429,7 +437,7 @@ footer p {
 
 #resultatVerification {
     margin-top: 15px;
-    background-color: #f8f9fa;
+    background-color: #f8f9f9;
     border: 1px solid #ddd;
     padding: 10px;
     border-radius: 4px;
@@ -437,6 +445,8 @@ footer p {
 
 #resultatVerification p {
     margin: 5px 0;
+    padding: 0;
+    border: none;
 }
 
 #resultatVerification span {

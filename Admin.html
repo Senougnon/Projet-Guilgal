@@ -38,11 +38,11 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        .boutique-form, .user-form, .boutique-list, .user-list {
+        .boutique-form, .user-form, .boutique-list, .user-list, .settings-form {
             margin-bottom: 30px;
         }
 
-        .boutique-form h2, .user-form h2, .boutique-list h2, .user-list h2 {
+        .boutique-form h2, .user-form h2, .boutique-list h2, .user-list h2, .settings-form h2 {
             border-bottom: 2px solid #007bff;
             padding-bottom: 10px;
             margin-bottom: 20px;
@@ -219,6 +219,21 @@
                     <!-- User data will be inserted here -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- Settings Management Section -->
+        <div class="settings-form">
+            <h2>Gestion des Paramètres Généraux</h2>
+            <form id="settingsForm">
+                <label for="detailMarkup">Taux de marge prix de vente détail (%)</label>
+                <input type="number" id="detailMarkup" min="0" step="0.01" required>
+
+                <label for="wholesaleMarkup">Taux de marge prix de vente gros (%)</label>
+                <input type="number" id="wholesaleMarkup" min="0" step="0.01" required>
+
+                <div id="settingsErrorMessage" class="hidden"></div>
+                <button type="submit">Enregistrer les paramètres</button>
+            </form>
         </div>
     </div>
 
@@ -480,9 +495,56 @@
                 });
         }
 
+        // Settings Management
+        const settingsForm = document.getElementById('settingsForm');
+        const detailMarkupInput = document.getElementById('detailMarkup');
+        const wholesaleMarkupInput = document.getElementById('wholesaleMarkup');
+        const settingsErrorMessage = document.getElementById('settingsErrorMessage');
+
+        function loadSettings() {
+            const settingsRef = database.ref('settings');
+            settingsRef.once('value', (snapshot) => {
+                const settings = snapshot.val();
+                if (settings) {
+                    detailMarkupInput.value = settings.detailMarkup !== undefined ? settings.detailMarkup : '';
+                    wholesaleMarkupInput.value = settings.wholesaleMarkup !== undefined ? settings.wholesaleMarkup : '';
+                }
+            });
+        }
+
+        settingsForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const detailMarkup = parseFloat(detailMarkupInput.value);
+            const wholesaleMarkup = parseFloat(wholesaleMarkupInput.value);
+
+            if (isNaN(detailMarkup) || isNaN(wholesaleMarkup)) {
+                settingsErrorMessage.textContent = 'Veuillez entrer des valeurs numériques valides pour les taux de marge.';
+                settingsErrorMessage.classList.remove('hidden');
+                return;
+            }
+
+            const settingsRef = database.ref('settings');
+            settingsRef.update({
+                detailMarkup: detailMarkup,
+                wholesaleMarkup: wholesaleMarkup
+            })
+            .then(() => {
+                alert('Paramètres généraux mis à jour avec succès!');
+                settingsErrorMessage.classList.add('hidden');
+                loadSettings();
+            })
+            .catch(error => {
+                settingsErrorMessage.textContent = 'Une erreur s\'est produite lors de la mise à jour des paramètres ' + error.message;
+                settingsErrorMessage.classList.remove('hidden');
+                console.error("Erreur lors de la mise à jour des paramètres:", error);
+            });
+        });
+
+
         // Initial Load
         loadBoutiques();
         loadUsers();
+        loadSettings();
     </script>
 </body>
 </html>
