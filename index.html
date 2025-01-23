@@ -25,7 +25,6 @@
                 <li><a href="#" data-section="stock">Stock</a></li>
                 <li><a href="#" data-section="benefices">Bénéfices</a></li>
                 <li><a href="#" data-section="recouvrement">Recouvrement</a></li>
-                <li><a href="#" data-section="depenses">Dépenses</a></li>
                 <li><a href="#" data-section="verifier">Vérifier IMEI</a></li>
                  <li><a href="#" data-section="analyse">Analyse</a></li>
             </ul>
@@ -141,39 +140,7 @@
                     </tbody>
                 </table>
             </section>
-             <section id="depenses" class="section hidden">
-                <h2>Enregistrer une dépense</h2>
-                <form id="depenseForm">
-                    <label for="dateDepense">Date :</label>
-                    <input type="date" id="dateDepense" required><br>
 
-                    <label for="motifDepense">Motif :</label>
-                    <input type="text" id="motifDepense" required><br>
-
-                    <label for="montantDepense">Montant :</label>
-                    <input type="number" id="montantDepense" min="0" required><br>
-
-                    <button type="submit">Enregistrer</button>
-                </form>
-                <div class="table-header">
-                   <h2>Liste des dépenses</h2>
-                 <button id="printDepenses" class="print-button" data-table="depensesTable"><i class="fas fa-print"></i> Imprimer</button>
-                </div>
-                 <table id="depensesTable">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Motif</th>
-                            <th>Montant</th>
-                            <th>Enregistré par</th>
-                             <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Les données des depenses seront insérées ici -->
-                    </tbody>
-                </table>
-            </section>
 
             <section id="stock" class="section hidden">
                 <h2>Gestion du stock</h2>

@@ -1,4 +1,3 @@
-
 // Configuration Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBuZpGvZsXHuE2djlJtMS-aSKlZLBpMKoo",
@@ -23,13 +22,11 @@ let wholesaleMarkupPercentage = 15; // Default 15% markup for wholesale price
 const navLinks = document.querySelectorAll('nav ul li a');
 const sections = document.querySelectorAll('.section');
 const venteForm = document.getElementById('venteForm');
-const depenseForm = document.getElementById('depenseForm');
 const stockForm = document.getElementById('stockForm');
 const stockTable = document.getElementById('stockTable').querySelector('tbody');
 const beneficesTable = document.getElementById('beneficesTable').querySelector('tbody');
 const recouvrementTable = document.getElementById('recouvrementTable').querySelector('tbody');
 const ventesTable = document.getElementById('ventesTable').querySelector('tbody');
-const depensesTable = document.getElementById('depensesTable').querySelector('tbody');
 const boutiqueSelect = document.getElementById('boutiqueSelect');
 const dateDebut = document.getElementById('dateDebut');
 const dateFin = document.getElementById('dateFin');
@@ -306,132 +303,7 @@ function supprimerVente(venteId, boutique) {
         showStatusMessage("Erreur lors de la suppression de la vente.", false);
     });
 }
-// Gestion de la soumission du formulaire de dépense
-depenseForm.addEventListener('submit', function(event) {
-    event.preventDefault();
-    const dateDepense = document.getElementById('dateDepense').value;
-    const motifDepense = document.getElementById('motifDepense').value;
-    const montantDepense = parseFloat(document.getElementById('montantDepense').value);
-    const boutique = boutiqueSelect.value;
-    const vendeur = currentUser; // Récupérer le nom de l'utilisateur actuel
 
-    // Enregistrer la dépense dans Firebase
-    const depenseRef = database.ref(`depenses/${boutique}`).push();
-    depenseRef.set({
-        date: dateDepense,
-        motif: motifDepense,
-        montant: montantDepense,
-        vendeur: vendeur // Ajouter le nom de l'utilisateur actuel
-    })
-    .then(() => {
-        showStatusMessage('Dépense enregistrée avec succès!');
-        depenseForm.reset();
-        chargerDepenses(boutique); // Recharger le tableau des dépenses
-    })
-    .catch(error => {
-        console.error("Erreur lors de l'enregistrement de la dépense:", error);
-        showStatusMessage("Erreur lors de l'enregistrement de la dépense.", false);
-    });
-});
-
-// Fonction pour charger les dépenses
-function chargerDepenses(boutique) {
-    const depensesRef = database.ref(`depenses/${boutique}`);
-    depensesRef.on('value', (snapshot) => {
-        depensesTable.innerHTML = ''; // Vider le tableau
-        snapshot.forEach(childSnapshot => {
-            const depense = childSnapshot.val();
-            const row = depensesTable.insertRow();
-            row.insertCell().textContent = depense.date;
-            row.insertCell().textContent = depense.motif;
-            row.insertCell().textContent = depense.montant;
-            row.insertCell().textContent = depense.vendeur; // Afficher le nom du vendeur
-
-            // Ajouter les icônes d'action
-            const actionsCell = row.insertCell();
-            const actionIcons = document.createElement('div');
-            actionIcons.className = 'action-icons';
-
-            const editIcon = document.createElement('i');
-            editIcon.className = 'fas fa-edit';
-            editIcon.addEventListener('click', () => {
-                // Remplir le formulaire de dépense avec les données actuelles
-                document.getElementById('dateDepense').value = depense.date;
-                document.getElementById('motifDepense').value = depense.motif;
-                document.getElementById('montantDepense').value = depense.montant;
-
-                // Modifier le bouton pour indiquer une mise à jour
-                depenseForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
-
-                // Ajouter un identifiant unique au formulaire pour savoir quelle dépense modifier
-                depenseForm.dataset.depenseId = childSnapshot.key;
-            });
-
-            const deleteIcon = document.createElement('i');
-            deleteIcon.className = 'fas fa-trash-alt';
-            deleteIcon.addEventListener('click', () => {
-                if (confirm(`Êtes-vous sûr de vouloir supprimer cette dépense ?`)) {
-                    supprimerDepense(childSnapshot.key, boutique);
-                }
-            });
-
-            actionIcons.appendChild(editIcon);
-            actionIcons.appendChild(deleteIcon);
-            actionsCell.appendChild(actionIcons);
-        });
-    });
-}
-
-// Gestionnaire d'événement pour la mise à jour d'une dépense
-depenseForm.addEventListener('submit', function(event) {
-    event.preventDefault();
-    const depenseId = depenseForm.dataset.depenseId;
-
-    if (depenseId) {
-        // Mettre à jour la dépense existante
-        const dateDepense = document.getElementById('dateDepense').value;
-        const motifDepense = document.getElementById('motifDepense').value;
-        const montantDepense = parseFloat(document.getElementById('montantDepense').value);
-        const boutique = boutiqueSelect.value;
-        const vendeur = currentUser;
-
-        const depenseRef = database.ref(`depenses/${boutique}/${depenseId}`);
-        depenseRef.update({
-            date: dateDepense,
-            motif: motifDepense,
-            montant: montantDepense,
-            vendeur: vendeur
-        })
-        .then(() => {
-            showStatusMessage('Dépense mise à jour avec succès!');
-            depenseForm.reset();
-            depenseForm.querySelector('button[type="submit"]').textContent = 'Enregistrer';
-            delete depenseForm.dataset.depenseId;
-            chargerDepenses(boutique);
-        })
-        .catch(error => {
-            console.error("Erreur lors de la mise à jour de la dépense:", error);
-            showStatusMessage("Erreur lors de la mise à jour de la dépense.", false);
-        });
-    } else {
-        // Enregistrement d'une nouvelle dépense (logique existante)
-        // ...
-    }
-});
-
-// Fonction pour supprimer une dépense
-function supprimerDepense(depenseId, boutique) {
-    const depenseRef = database.ref(`depenses/${boutique}/${depenseId}`);
-    depenseRef.remove()
-    .then(() => {
-        showStatusMessage(`Dépense supprimée avec succès!`);
-        chargerDepenses(boutique); // Recharger les dépenses
-    })
-    .catch(error => {
-        console.error("Erreur lors de la suppression de la dépense:", error);
-        showStatusMessage("Erreur lors de la suppression de la dépense.", false);
-    });
-}
 
 // Gestion de la soumission du formulaire de stock
 stockForm.addEventListener('submit', function(event) {
@@ -755,7 +627,6 @@ boutiqueSelect.addEventListener('change', () => {
      chargerVentesDuJour(boutique);
      chargerAlertesStock(boutique);
     chargerVentes(boutique);
-    chargerDepenses(boutique);
      updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général au changement de boutique
      chargerRecouvrements(boutique); // Charger les recouvrements pour la boutique sélectionnée
      updateVentesChart(boutique); // Mise à jour du graphique pour la boutique sélectionnée
@@ -932,80 +803,64 @@ function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
         let totalVentes = 0;
         let depensesTotales = 0;
 
-        // Récupérer les dépenses pour la boutique et la période spécifiées
-        const depensesRef = database.ref(`depenses/${boutique}`);
-        depensesRef.once('value', (depensesSnapshot) => {
-            const depensesData = depensesSnapshot.val();
-            if (depensesData) {
-                for (const depenseId in depensesData) {
-                    const depense = depensesData[depenseId];
-                    if (depense.date >= dateDebut && depense.date <= dateFin) {
-                        depensesTotales += parseFloat(depense.montant) || 0;
-                    }
+        ventesRef.once('value', (snapshot) => {
+            const ventes = snapshot.val();
+            let quantiteVendue = 0;
+
+            for (const venteId in ventes) {
+                const vente = ventes[venteId];
+                if (vente.date >= dateDebut && vente.date <= dateFin) {
+                    totalVentes += vente.prixTotal;
+                    quantiteVendue += vente.quantite;
+
+                    // Récupérer le prix d'achat du stock pour calculer la dépense
+                    const stockRef = database.ref(`stock/${boutique}/${vente.produit}`);
+                    stockRef.once('value', (stockSnapshot) => {
+                        const stock = stockSnapshot.val();
+                        if (stock) {
+                            const coutVente = vente.quantite * stock.prixAchat;
+                            const beneficeProduit = vente.prixTotal - coutVente;
+
+                            if (!benefices[vente.produit]) {
+                                benefices[vente.produit] = 0;
+                            }
+                            benefices[vente.produit] += beneficeProduit;
+                        }
+
+                        // Enregistrer le bénéfice dans la base de données
+                        const beneficeRef = database.ref(`benefices/${boutique}/${vente.date}`);
+                        beneficeRef.transaction((currentBenefice) => {
+                            if (!currentBenefice) {
+                                currentBenefice = { total: 0 };
+                            }
+                            // Recalculer le total en soustrayant les dépenses globales à la fin (pour éviter de les soustraire à chaque vente)
+                            currentBenefice.total += beneficeProduit;
+                            return currentBenefice;
+                        }, (error, committed) => {
+                            if (error) {
+                                console.error("Erreur lors de l'enregistrement du bénéfice:", error);
+                                reject(error);
+                            } else if (committed) {
+                                console.log("Bénéfice enregistré avec succès.");
+                            } else {
+                                console.log("La transaction d'enregistrement du bénéfice a été annulée.");
+                            }
+                        });
+                    });
                 }
             }
-            depensesSpan.textContent = depensesTotales.toFixed(2);
+            // Après avoir traité toutes les ventes, soustraire les dépenses totales du bénéfice total
+            let beneficeTotalCalculated = 0;
+            for (const produit in benefices) {
+                beneficeTotalCalculated += benefices[produit];
+            }
+            beneficeTotalSpan.textContent = beneficeTotalCalculated.toFixed(2);
 
 
-            ventesRef.once('value', (snapshot) => {
-                const ventes = snapshot.val();
-                let quantiteVendue = 0;
-
-                for (const venteId in ventes) {
-                    const vente = ventes[venteId];
-                    if (vente.date >= dateDebut && vente.date <= dateFin) {
-                        totalVentes += vente.prixTotal;
-                        quantiteVendue += vente.quantite;
-
-                        // Récupérer le prix d'achat du stock pour calculer la dépense
-                        const stockRef = database.ref(`stock/${boutique}/${vente.produit}`);
-                        stockRef.once('value', (stockSnapshot) => {
-                            const stock = stockSnapshot.val();
-                            if (stock) {
-                                const coutVente = vente.quantite * stock.prixAchat;
-                                const beneficeProduit = vente.prixTotal - coutVente;
-
-                                if (!benefices[vente.produit]) {
-                                    benefices[vente.produit] = 0;
-                                }
-                                benefices[vente.produit] += beneficeProduit;
-                            }
-
-                            // Enregistrer le bénéfice dans la base de données
-                            const beneficeRef = database.ref(`benefices/${boutique}/${vente.date}`);
-                            beneficeRef.transaction((currentBenefice) => {
-                                if (!currentBenefice) {
-                                    currentBenefice = { total: 0 };
-                                }
-                                // Recalculer le total en soustrayant les dépenses globales à la fin (pour éviter de les soustraire à chaque vente)
-                                currentBenefice.total += beneficeProduit;
-                                return currentBenefice;
-                            }, (error, committed) => {
-                                if (error) {
-                                    console.error("Erreur lors de l'enregistrement du bénéfice:", error);
-                                    reject(error);
-                                } else if (committed) {
-                                    console.log("Bénéfice enregistré avec succès.");
-                                } else {
-                                    console.log("La transaction d'enregistrement du bénéfice a été annulée.");
-                                }
-                            });
-                        });
-                    }
-                }
-                // Après avoir traité toutes les ventes, soustraire les dépenses totales du bénéfice total
-                let beneficeTotalCalculated = 0;
-                for (const produit in benefices) {
-                    beneficeTotalCalculated += benefices[produit];
-                }
-                beneficeTotalCalculated -= depensesTotales;
-                beneficeTotalSpan.textContent = beneficeTotalCalculated.toFixed(2);
-
-
-                // Résoudre la promesse avec les bénéfices, le total des ventes et les dépenses
-                resolve({ benefices, totalVentes, depenses: depensesTotales });
-            });
+            // Résoudre la promesse avec les bénéfices, le total des ventes et les dépenses
+            resolve({ benefices, totalVentes});
         });
+
     });
 }
 
@@ -1293,7 +1148,6 @@ function chargerBeneficesToutesBoutiques(dateDebut, dateFin) {
                 }
                 beneficesToutesBoutiques[produit] += benefices[produit];
             }
-            depensesSpan.textContent = (parseFloat(depensesSpan.textContent) + depenses).toFixed(2);
             actualiserTableauBenefices(beneficesToutesBoutiques);
         };
 
@@ -1684,9 +1538,6 @@ function printTableToPDF(tableId) {
         case 'recouvrementTable':
             title = 'Recouvrements';
             break;
-         case 'depensesTable':
-            title = 'Dépenses';
-            break;
          case 'topVentesSemaine':
             title = 'Top des ventes par semaine';
             break;
@@ -1733,9 +1584,6 @@ document.getElementById('printRecouvrement').addEventListener('click', function(
     printTableToPDF('recouvrementTable');
 });
 
-document.getElementById('printDepenses').addEventListener('click', function() {
-    printTableToPDF('depensesTable');
-});
 
 document.getElementById('printTopVentesSemaine').addEventListener('click', function() {
     printTableToPDF('topVentesSemaine');
