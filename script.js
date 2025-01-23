@@ -408,11 +408,11 @@ function supprimerDepense(depenseId, boutique) {
 stockForm.addEventListener('submit', function(event) {
     event.preventDefault();
     const produit = document.getElementById('produitStock').value;
-    const quantite = parseInt(document.getElementById('quantiteStock').value);
-    const prixAchat = parseFloat(document.getElementById('prixAchat').value);
     const stockInitial = parseInt(document.getElementById('stockInitial').value);
     const approvisionnement = parseInt(document.getElementById('approvisionnement').value);
+    const prixAchat = parseFloat(document.getElementById('prixAchat').value);
     const boutique = boutiqueSelect.value;
+    const quantite = approvisionnement; // Quantité ajoutée au stock est l'approvisionnement
 
     // Ajouter le produit au stock dans Firebase
     const stockRef = database.ref(`stock/${boutique}/${produit}`);
@@ -443,10 +443,10 @@ stockForm.addEventListener('submit', function(event) {
         } else {
             // Le produit n'existe pas, l'ajouter au stock
             stockRef.set({
-                quantite: quantite,
+                quantite: stockInitial + quantite, // Stock final est stock initial + approvisionnement
                 prixAchat: prixAchat,
                 stockInitial: stockInitial,
-                approvisionnement: approvisionnement,
+                approvisionnement: quantite, // L'approvisionnement est la quantité ajoutée
                 prixVenteDetail: prixAchat * 1.20, // Calcul du prix de vente (détail)
                 prixVenteGros: prixAchat * 1.15 // Calcul du prix de vente (gros)
             })
@@ -538,31 +538,41 @@ function chargerStock(boutique) {
             row.insertCell().textContent = details.prixVenteDetail;
             row.insertCell().textContent = details.prixVenteGros;
             const actionsCell = row.insertCell();
-            const modifierButton = document.createElement('button');
-            modifierButton.textContent = 'Modifier';
-            modifierButton.addEventListener('click', () => {
+            const actionIcons = document.createElement('div');
+            actionIcons.className = 'action-icons';
+
+            const editIcon = document.createElement('i');
+            editIcon.className = 'fas fa-edit';
+            editIcon.addEventListener('click', () => {
                  // Remplir le formulaire de stock avec les données actuelles du produit
                 document.getElementById('produitStock').value = produit;
-                document.getElementById('quantiteStock').value = details.quantite;
-                document.getElementById('prixAchat').value = details.prixAchat;
                 document.getElementById('stockInitial').value = details.stockInitial !== undefined ? details.stockInitial : 0;
                 document.getElementById('approvisionnement').value = details.approvisionnement !== undefined ? details.approvisionnement : 0;
+                document.getElementById('prixAchat').value = details.prixAchat;
+
                 // Optionnel : Modifier le bouton pour indiquer une mise à jour
                 stockForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
-
-                // Optionnel : Ajouter un identifiant unique au formulaire pour savoir quel produit modifier
                 stockForm.dataset.produit = produit;
             });
-            actionsCell.appendChild(modifierButton);
 
-            const supprimerButton = document.createElement('button');
-            supprimerButton.textContent = 'Supprimer';
-            supprimerButton.addEventListener('click', () => {
+            const deleteIcon = document.createElement('i');
+            deleteIcon.className = 'fas fa-trash-alt';
+            deleteIcon.addEventListener('click', () => {
                 if (confirm(`Êtes-vous sûr de vouloir supprimer ${produit} du stock?`)) {
                     supprimerProduitDuStock(produit, boutique);
                 }
             });
-            actionsCell.appendChild(supprimerButton);
+             const approvisionnerIcon = document.createElement('i');
+            approvisionnerIcon.className = 'fas fa-box-open';
+            approvisionnerIcon.addEventListener('click', () => {
+                approvisionnerProduitDuStock(produit, boutique);
+            });
+
+
+            actionIcons.appendChild(editIcon);
+            actionIcons.appendChild(deleteIcon);
+             actionIcons.appendChild(approvisionnerIcon);
+            actionsCell.appendChild(actionIcons);
         });
          updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général après chargement du stock
     });
@@ -581,6 +591,17 @@ function supprimerProduitDuStock(produit, boutique) {
         alert("Erreur lors de la suppression du produit du stock.");
     });
 }
+// Fonction pour approvisionner un produit du stock
+function approvisionnerProduitDuStock(produit, boutique) {
+    const quantiteApprovisionner = parseInt(prompt(`Entrez la quantité à approvisionner pour ${produit}:`), 10);
+    if (isNaN(quantiteApprovisionner) || quantiteApprovisionner <= 0) {
+        alert("Quantité invalide pour l'approvisionnement.");
+        return;
+    }
+
+    mettreAJourStock(produit, quantiteApprovisionner, boutique, 'ajout');
+}
+
 
 // Charger le stock au chargement de la page
 // Remplacé par la logique de chargement des boutiques
