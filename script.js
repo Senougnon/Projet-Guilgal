@@ -1,4 +1,3 @@
-/* script.js */
 // Configuration Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyBuZpGvZsXHuE2djlJtMS-aSKlZLBpMKoo",
@@ -747,6 +746,7 @@ function chargerStockToutesBoutiques() {
 // Fonction pour charger les bénéfices
 function chargerBenefices(boutique) {
      beneficesTable.innerHTML = ''; // Vider le tableau
+     depensesSpan.textContent = '0.00'; // Reset expenses display when loading benefits
     if (boutique === 'Toutes') {
 
         const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
@@ -757,6 +757,7 @@ function chargerBenefices(boutique) {
             });
         let beneficesToutesBoutiques = {};
         let totalVentes = 0;
+        let totalDepensesAllBoutiques = 0;
 
         // Fonction pour fusionner les bénéfices de chaque boutique
         const fusionnerBenefices = (boutique, benefices, depenses) => {
@@ -766,16 +767,15 @@ function chargerBenefices(boutique) {
                 }
                 beneficesToutesBoutiques[produit] += benefices[produit];
             }
-             depensesSpan.textContent = (parseFloat(depensesSpan.textContent) + depenses).toFixed(2);
+             totalDepensesAllBoutiques += depenses;
+            depensesSpan.textContent = totalDepensesAllBoutiques.toFixed(2);
             // Mettre à jour le tableau HTML avec les bénéfices fusionnés
             actualiserTableauBenefices(beneficesToutesBoutiques);
         };
 
         // Parcourir chaque boutique pour récupérer et fusionner les bénéfices
         boutiques.forEach(boutique => {
-            const dateDebut = document.getElementById('dateDebut').value;
-            const dateFin = document.getElementById('dateFin').value;
-            calculerEtAfficherBenefices(boutique, dateDebut, dateFin)
+            calculerEtAfficherBenefices(boutique)
                 .then(({ benefices, depenses }) => {
                     // Fusionner les bénéfices de la boutique actuelle avec le total
                     fusionnerBenefices(boutique, benefices, depenses);
@@ -796,7 +796,7 @@ function chargerBenefices(boutique) {
                 }
             }
 
-            beneficeTotalSpan.textContent = beneficeTotal.toFixed(2);
+            beneficeTotalSpan.textContent = (parseFloat(depensesSpan.textContent) > 0) ? (beneficeTotal - parseFloat(depensesSpan.textContent)).toFixed(2) : beneficeTotal.toFixed(2) ;
         });
 
         // Actualiser le tableau avec les données de toutes les boutiques
@@ -811,9 +811,7 @@ function chargerBenefices(boutique) {
       });
     } else {
         // Logique pour une seule boutique
-        const dateDebut = document.getElementById('dateDebut').value;
-        const dateFin = document.getElementById('dateFin').value;
-        calculerEtAfficherBenefices(boutique, dateDebut, dateFin)
+        calculerEtAfficherBenefices(boutique)
             .then(({ benefices, totalVentes, depenses }) => {
                 beneficesTable.innerHTML = ''; // Vider le tableau
                 for (const produit in benefices) {
@@ -822,34 +820,34 @@ function chargerBenefices(boutique) {
                     row.insertCell().textContent = benefices[produit].toFixed(2);
                 }
                 depensesSpan.textContent = depenses.toFixed(2);
+                 beneficeTotalSpan.textContent = Object.values(benefices).reduce((a, b) => a + b, 0).toFixed(2) - parseFloat(depensesSpan.textContent) ;
+
             })
             .catch(error => {
                 console.error("Erreur lors du calcul des bénéfices:", error);
             });
 
-        // Calculer le bénéfice total pour la période et la boutique sélectionnées
+        // Calculer le bénéfice total pour la période et la boutique sélectionnées (no date filtering now)
         const beneficeRef = database.ref(`benefices/${boutique}`);
         beneficeRef.once('value', (snapshot) => {
             const benefices = snapshot.val();
             let beneficeTotal = 0;
-
             for (const date in benefices) {
-                if (date >= dateDebut && date <= dateFin) {
                     beneficeTotal += parseFloat(benefices[date].total) || 0;
-                }
             }
-
-            beneficeTotalSpan.textContent = beneficeTotal.toFixed(2);
+             beneficeTotalSpan.textContent = (parseFloat(depensesSpan.textContent) > 0) ? (beneficeTotal - parseFloat(depensesSpan.textContent)).toFixed(2) : beneficeTotal.toFixed(2) ;
         });
     }
 }
 
-genererBeneficesButton.addEventListener('click', () => {
-    const boutique = boutiqueSelect.value;
-    chargerBenefices(boutique);
-});
+// Supprimer l'event listener pour genererBeneficesButton
+// genererBeneficesButton.addEventListener('click', () => {
+//     const boutique = boutiqueSelect.value;
+//     chargerBenefices(boutique);
+// });
+
 // Fonction pour calculer et afficher les bénéfices
-function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
+function calculerEtAfficherBenefices(boutique) {
     return new Promise((resolve, reject) => {
         const ventesRef = database.ref(`ventes/${boutique}`);
         const depensesRef = database.ref(`depenses/${boutique}`);
@@ -866,9 +864,7 @@ function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
             if (depensesData) {
                 for (const depenseId in depensesData) {
                     const depense = depensesData[depenseId];
-                     if (depense.dateDepense >= dateDebut && depense.dateDepense <= dateFin) {
                         depensesTotales += parseFloat(depense.montantDepense) || 0;
-                     }
                 }
             }
 
@@ -877,7 +873,6 @@ function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
 
             for (const venteId in ventes) {
                 const vente = ventes[venteId];
-                if (vente.date >= dateDebut && vente.date <= dateFin) {
                     totalVentes += vente.prixTotal;
                     quantiteVendue += vente.quantite;
 
@@ -915,7 +910,6 @@ function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
                             }
                         });
                     });
-                }
             }
             // Après avoir traité toutes les ventes, soustraire les dépenses totales du bénéfice total
             let beneficeTotalCalculated = 0;
@@ -923,7 +917,6 @@ function calculerEtAfficherBenefices(boutique, dateDebut, dateFin) {
                 beneficeTotalCalculated += benefices[produit];
             }
             beneficeTotalCalculated -= depensesTotales;
-            beneficeTotalSpan.textContent = beneficeTotalCalculated.toFixed(2);
             depensesSpan.textContent = depensesTotales.toFixed(2);
 
 
