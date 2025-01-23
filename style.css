@@ -24,7 +24,6 @@ header h1 {
 }
 
 nav ul {
-    list-style: none;
     padding: 0;
     margin: 20px 0;
 }
@@ -555,4 +554,42 @@ footer p {
     font-size: 1.5rem;
     border-bottom: none;
      padding-bottom: 0;
+}
+
+/* Styles pour la section dépenses */
+#depensesSection table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#depensesSection th, #depensesSection td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#depensesSection th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+#depensesSection tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+#depenseForm select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 0.9rem;
+    appearance: none; /* Reset default appearance */
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+    background-repeat: no-repeat;
+    background-position-x: 100%;
+    background-position-y: 8px;
 }

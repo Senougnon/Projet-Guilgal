@@ -27,6 +27,7 @@
                 <li><a href="#" data-section="recouvrement">Recouvrement</a></li>
                 <li><a href="#" data-section="verifier">Vérifier IMEI</a></li>
                  <li><a href="#" data-section="analyse">Analyse</a></li>
+                 <li><a href="#" data-section="depensesSection">Dépenses</a></li>
             </ul>
         </nav>
          <div class="filters">
@@ -34,11 +35,6 @@
                 <option value="Toutes">Toutes les boutiques</option>
                 <!-- Options will be dynamically loaded here -->
             </select>
-            <label for="dateDebutFilter">Date de début:</label>
-            <input type="date" id="dateDebutFilter">
-            <label for="dateFinFilter">Date de fin:</label>
-            <input type="date" id="dateFinFilter">
-            <button id="filtrerBtn">Filtrer</button>
         </div>
         <div id="userStatus">
             <span id="currentUser"></span>
@@ -341,6 +337,51 @@
                         </tbody>
                       </table>
                     </div>
+            </section>
+
+            <section id="depensesSection" class="section hidden">
+                <h2>Enregistrer une dépense</h2>
+                <form id="depenseForm">
+                    <label for="dateDepense">Date:</label>
+                    <input type="date" id="dateDepense" required><br>
+
+                    <label for="descriptionDepense">Description:</label>
+                    <input type="text" id="descriptionDepense" required><br>
+
+                    <label for="montantDepense">Montant:</label>
+                    <input type="number" id="montantDepense" min="0" step="0.01" required><br>
+
+                    <label for="categorieDepense">Catégorie:</label>
+                    <select id="categorieDepense" required>
+                        <option value="">Sélectionnez une catégorie</option>
+                        <option value="charges_locatives">Charges locatives</option>
+                        <option value="salaires">Salaires</option>
+                        <option value="fournitures_bureau">Fournitures de bureau</option>
+                        <option value="marketing">Marketing</option>
+                        <option value="autres">Autres</option>
+                    </select><br>
+
+                    <button type="submit">Enregistrer la dépense</button>
+                </form>
+
+                <div class="table-header">
+                    <h2>Liste des dépenses</h2>
+                    <button id="printDepenses" class="print-button" data-table="depensesTable"><i class="fas fa-print"></i> Imprimer</button>
+                </div>
+                <table id="depensesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Montant</th>
+                            <th>Catégorie</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Les données des dépenses seront insérées ici -->
+                    </tbody>
+                </table>
             </section>
         </main>
 
