@@ -180,48 +180,103 @@ function showStatusMessage(message, isSuccess = true) {
 // Gestion de la soumission du formulaire de vente
 venteForm.addEventListener('submit', function(event) {
     event.preventDefault();
-    const dateVente = document.getElementById('dateVente').value;
-    const produitVente = document.getElementById('produitVente').value;
-    const quantiteVente = parseInt(document.getElementById('quantiteVente').value);
-    const prixUnitaireVente = parseFloat(document.getElementById('prixUnitaireVente').value);
-    const typeVente = document.getElementById('typeVente').value;
-    const imeiVente = document.getElementById('imeiVente').value;
-    const nomClient = document.getElementById('nomClient').value;
-    const telClient = document.getElementById('telClient').value;
-    const estPaye = document.getElementById('estPaye').checked;
-    const boutique = boutiqueSelect.value;
-    const prixTotal = quantiteVente * prixUnitaireVente;
+    const venteId = venteForm.dataset.venteId;
 
-    // Récupérer le nom de l'utilisateur actuel
-    const vendeur = currentUser;
+    if (venteId) {
+        // Mettre à jour la vente existante
+        const dateVente = document.getElementById('dateVente').value;
+        const produitVente = document.getElementById('produitVente').value;
+        const quantiteVente = parseInt(document.getElementById('quantiteVente').value);
+        const prixUnitaireVente = parseFloat(document.getElementById('prixUnitaireVente').value);
+        const typeVente = document.getElementById('typeVente').value;
+        const imeiVente = document.getElementById('imeiVente').value;
+        const nomClient = document.getElementById('nomClient').value;
+        const telClient = document.getElementById('telClient').value;
+        const estPaye = document.getElementById('estPaye').checked;
+        const boutique = boutiqueSelect.value;
+        const prixTotal = quantiteVente * prixUnitaireVente;
+        const vendeur = currentUser;
 
-    // Enregistrer la vente dans Firebase
-    const venteRef = database.ref(`ventes/${boutique}`).push();
-    venteRef.set({
-        date: dateVente,
-        produit: produitVente,
-        quantite: quantiteVente,
-        prixUnitaire: prixUnitaireVente,
-        type: typeVente,
-        imei: imeiVente,
-        nomClient: nomClient,
-        telClient: telClient,
-        statutPaiement: estPaye ? 'Payé' : 'Non payé',
-        prixTotal: prixTotal,
-        vendeur: vendeur // Ajouter le nom de l'utilisateur actuel comme vendeur
-    })
-    .then(() => {
-        showStatusMessage('Vente enregistrée avec succès!');
-        venteForm.reset();
-        // Mettre à jour le stock
-        mettreAJourStock(produitVente, quantiteVente, boutique, 'vente', typeVente);
-          // Recharger le tableau des ventes
-        chargerVentes(boutique);
-    })
-    .catch(error => {
-        console.error("Erreur lors de l'enregistrement de la vente:", error);
-        showStatusMessage("Erreur lors de l'enregistrement de la vente.", false);
-    });
+        const venteRef = database.ref(`ventes/${boutique}/${venteId}`);
+
+        venteRef.once('value', (originalSaleSnapshot) => {
+            const originalSale = originalSaleSnapshot.val();
+            if (originalSale) {
+                // Revert stock for the original sale quantity
+                mettreAJourStock(originalSale.produit, -originalSale.quantite, boutique, 'vente', originalSale.type);
+
+                venteRef.update({
+                    date: dateVente,
+                    produit: produitVente,
+                    quantite: quantiteVente,
+                    prixUnitaire: prixUnitaireVente,
+                    type: typeVente,
+                    imei: imeiVente,
+                    nomClient: nomClient,
+                    telClient: telClient,
+                    statutPaiement: estPaye ? 'Payé' : 'Non payé',
+                    prixTotal: prixTotal,
+                    vendeur: vendeur
+                })
+                .then(() => {
+                    // Apply stock update for the new sale quantity
+                    mettreAJourStock(produitVente, quantiteVente, boutique, 'vente', typeVente);
+                    showStatusMessage('Vente mise à jour avec succès et stock ajusté!');
+                    venteForm.reset();
+                    venteForm.querySelector('button[type="submit"]').textContent = 'Enregistrer';
+                    delete venteForm.dataset.venteId;
+                    chargerVentes(boutique);
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la mise à jour de la vente:", error);
+                    showStatusMessage("Erreur lors de la mise à jour de la vente.", false);
+                });
+            }
+        });
+    } else {
+        // Enregistrement d'une nouvelle vente (logique existante)
+        // ... (rest of your existing new sale registration code)
+         const dateVente = document.getElementById('dateVente').value;
+        const produitVente = document.getElementById('produitVente').value;
+        const quantiteVente = parseInt(document.getElementById('quantiteVente').value);
+        const prixUnitaireVente = parseFloat(document.getElementById('prixUnitaireVente').value);
+        const typeVente = document.getElementById('typeVente').value;
+        const imeiVente = document.getElementById('imeiVente').value;
+        const nomClient = document.getElementById('nomClient').value;
+        const telClient = document.getElementById('telClient').value;
+        const estPaye = document.getElementById('estPaye').checked;
+        const boutique = boutiqueSelect.value;
+        const prixTotal = quantiteVente * prixUnitaireVente;
+        const vendeur = currentUser;
+
+        // Enregistrer la vente dans Firebase
+        const venteRef = database.ref(`ventes/${boutique}`).push();
+        venteRef.set({
+            date: dateVente,
+            produit: produitVente,
+            quantite: quantiteVente,
+            prixUnitaire: prixUnitaireVente,
+            type: typeVente,
+            imei: imeiVente,
+            nomClient: nomClient,
+            telClient: telClient,
+            statutPaiement: estPaye ? 'Payé' : 'Non payé',
+            prixTotal: prixTotal,
+            vendeur: vendeur // Ajouter le nom de l'utilisateur actuel comme vendeur
+        })
+        .then(() => {
+            showStatusMessage('Vente enregistrée avec succès!');
+            venteForm.reset();
+            // Mettre à jour le stock
+            mettreAJourStock(produitVente, quantiteVente, boutique, 'vente', typeVente);
+              // Recharger le tableau des ventes
+            chargerVentes(boutique);
+        })
+        .catch(error => {
+            console.error("Erreur lors de l'enregistrement de la vente:", error);
+            showStatusMessage("Erreur lors de l'enregistrement de la vente.", false);
+        });
+    }
 });
 // Fonction pour charger les ventes
 function chargerVentes(boutique) {
@@ -283,71 +338,47 @@ function chargerVentes(boutique) {
     });
 }
 
-// Gestionnaire d'événement pour la mise à jour d'une vente
-venteForm.addEventListener('submit', function(event) {
-    event.preventDefault();
-    const venteId = venteForm.dataset.venteId;
-
-    if (venteId) {
-        // Mettre à jour la vente existante
-        const dateVente = document.getElementById('dateVente').value;
-        const produitVente = document.getElementById('produitVente').value;
-        const quantiteVente = parseInt(document.getElementById('quantiteVente').value);
-        const prixUnitaireVente = parseFloat(document.getElementById('prixUnitaireVente').value);
-        const typeVente = document.getElementById('typeVente').value;
-        const imeiVente = document.getElementById('imeiVente').value;
-        const nomClient = document.getElementById('nomClient').value;
-        const telClient = document.getElementById('telClient').value;
-        const estPaye = document.getElementById('estPaye').checked;
-        const boutique = boutiqueSelect.value;
-        const prixTotal = quantiteVente * prixUnitaireVente;
-        const vendeur = currentUser;
-
-        const venteRef = database.ref(`ventes/${boutique}/${venteId}`);
-        venteRef.update({
-            date: dateVente,
-            produit: produitVente,
-            quantite: quantiteVente,
-            prixUnitaire: prixUnitaireVente,
-            type: typeVente,
-            imei: imeiVente,
-            nomClient: nomClient,
-            telClient: telClient,
-            statutPaiement: estPaye ? 'Payé' : 'Non payé',
-            prixTotal: prixTotal,
-            vendeur: vendeur
-        })
-        .then(() => {
-            showStatusMessage('Vente mise à jour avec succès!');
-            venteForm.reset();
-            venteForm.querySelector('button[type="submit"]').textContent = 'Enregistrer';
-            delete venteForm.dataset.venteId;
-            chargerVentes(boutique);
-        })
-        .catch(error => {
-            console.error("Erreur lors de la mise à jour de la vente:", error);
-            showStatusMessage("Erreur lors de la mise à jour de la vente.", false);
-        });
-    } else {
-        // Enregistrement d'une nouvelle vente (logique existante)
-        // ...
-    }
-});
 
 // Fonction pour supprimer une vente
 function supprimerVente(venteId, boutique) {
     const venteRef = database.ref(`ventes/${boutique}/${venteId}`);
-    venteRef.remove()
-    .then(() => {
-        showStatusMessage(`Vente supprimée avec succès!`);
-        chargerVentes(boutique); // Recharger les ventes
-    })
-    .catch(error => {
-        console.error("Erreur lors de la suppression de la vente:", error);
-        showStatusMessage("Erreur lors de la suppression de la vente.", false);
+    venteRef.once('value', (snapshot) => {
+        const vente = snapshot.val();
+        if (vente) {
+            // Revert stock for the deleted sale
+            mettreAJourStock(vente.produit, -vente.quantite, boutique, 'vente', vente.type); // Use negative quantity to add back to stock
+            venteRef.remove()
+            .then(() => {
+                showStatusMessage(`Vente supprimée avec succès et stock mis à jour!`);
+                chargerVentes(boutique); // Recharger les ventes
+            })
+            .catch(error => {
+                console.error("Erreur lors de la suppression de la vente:", error);
+                showStatusMessage("Erreur lors de la suppression de la vente.", false);
+            });
+        }
     });
 }
 
+
+// Feature 1: Default Detail Price in Sales Form
+document.getElementById('produitVente').addEventListener('change', function() {
+    const produitVenteNom = this.value;
+    const boutique = boutiqueSelect.value;
+    if (produitVenteNom && boutique) {
+        const stockRef = database.ref(`stock/${boutique}/${produitVenteNom}`);
+        stockRef.once('value', (snapshot) => {
+            const stockData = snapshot.val();
+            if (stockData && stockData.prixVenteDetail !== undefined) {
+                document.getElementById('prixUnitaireVente').value = stockData.prixVenteDetail;
+            } else {
+                document.getElementById('prixUnitaireVente').value = ''; // Clear if no detail price found
+            }
+        });
+    } else {
+        document.getElementById('prixUnitaireVente').value = ''; // Clear if no product selected
+    }
+});
 
 // Gestion de la soumission du formulaire de stock
 stockForm.addEventListener('submit', function(event) {
@@ -360,6 +391,7 @@ stockForm.addEventListener('submit', function(event) {
     const quantiteApprovisionnement = approvisionnement; // Quantité ajoutée au stock est l'approvisionnement
     const dateApprovisionnement = new Date().toISOString().split('T')[0]; // Date actuelle pour l'approvisionnement
     const vendeurApprovisionnement = currentUser; // Vendeur qui effectue l'approvisionnement
+    const isApprovisionnerMode = stockForm.querySelector('button[type="submit"]').textContent === 'Approvisionner';
 
     // Calculate selling prices based on markup percentages
     const prixVenteDetail = prixAchat * (1 + (detailMarkupPercentage / 100));
@@ -370,42 +402,83 @@ stockForm.addEventListener('submit', function(event) {
     stockRef.once('value', (snapshot) => {
         const existingStock = snapshot.val();
         if (existingStock) {
-            // Le produit existe déjà, mettre à jour la quantité et l'approvisionnement
-            const newQuantite = existingStock.quantite + quantiteApprovisionnement;
-            const newApprovisionnementTotal = existingStock.approvisionnement + quantiteApprovisionnement; // Mettre à jour le total approvisionné
+            // Le produit existe déjà
+            if (isApprovisionnerMode) {
+                // Mode Approvisionner
+                const newQuantite = existingStock.quantite + quantiteApprovisionnement;
+                const newApprovisionnementTotal = (existingStock.approvisionnement || 0) + quantiteApprovisionnement; // Additionner à l'approvisionnement existant
 
-            stockRef.update({
-                quantite: newQuantite,
-                prixAchat: prixAchat,
-                approvisionnement: newApprovisionnementTotal, // Mettre à jour le total de l'approvisionnement
-                prixVenteDetail: prixVenteDetail, // Calcul du prix de vente (détail)
-                prixVenteGros: prixVenteGros // Calcul du prix de vente (gros)
-            })
-            .then(() => {
-                // Enregistrer l'événement d'approvisionnement séparément
-                const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
-                approvisionnementRef.set({
-                    dateApprovisionnement: dateApprovisionnement,
-                    produit: produit,
-                    quantiteApprovisionnement: quantiteApprovisionnement,
-                    prixAchatUnitaire: prixAchat,
-                    vendeurApprovisionnement: vendeurApprovisionnement
-                }).then(() => {
-                    showStatusMessage('Stock mis à jour et approvisionnement enregistré avec succès!');
-                    stockForm.reset();
-                    chargerStock(boutique); // Recharger le stock
-                    updateCapitalGeneralAndBeneficeGeneral(boutique); // Mettre à jour le capital et bénéfice général
-                }).catch(error => {
-                    console.error("Erreur lors de l'enregistrement de l'approvisionnement:", error);
-                    showStatusMessage("Erreur lors de l'enregistrement de l'approvisionnement.", false);
+                stockRef.update({
+                    quantite: newQuantite,
+                    prixAchat: prixAchat,
+                    approvisionnement: newApprovisionnementTotal, // Mettre à jour le total de l'approvisionnement en additionnant
+                    prixVenteDetail: prixVenteDetail,
+                    prixVenteGros: prixVenteGros
+                })
+                .then(() => {
+                    // Enregistrer l'événement d'approvisionnement
+                    const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
+                    approvisionnementRef.set({
+                        dateApprovisionnement: dateApprovisionnement,
+                        produit: produit,
+                        quantiteApprovisionnement: quantiteApprovisionnement,
+                        prixAchatUnitaire: prixAchat,
+                        vendeurApprovisionnement: vendeurApprovisionnement
+                    }).then(() => {
+                        showStatusMessage('Stock approvisionné et mise à jour réussie!');
+                        stockForm.reset();
+                        stockForm.querySelector('button[type="submit"]').textContent = 'Ajouter au stock'; // Reset button text
+                        document.getElementById('produitStock').readOnly = false; // Réactiver le champ produit
+                        chargerStock(boutique);
+                        updateCapitalGeneralAndBeneficeGeneral(boutique);
+                    }).catch(error => {
+                        console.error("Erreur lors de l'enregistrement de l'approvisionnement:", error);
+                        showStatusMessage("Erreur lors de l'enregistrement de l'approvisionnement.", false);
+                    });
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la mise à jour du stock:", error);
+                    showStatusMessage("Erreur lors de la mise à jour du stock.", false);
                 });
-            })
-            .catch(error => {
-                console.error("Erreur lors de la mise à jour du stock:", error);
-                showStatusMessage("Erreur lors de la mise à jour du stock.", false);
-            });
+
+            } else {
+                // Mode Ajouter au stock (produit existant, mais pas en mode "approvisionner") - Update quantity and price
+                const newQuantite = existingStock.quantite + quantiteApprovisionnement;
+                 const newApprovisionnementTotal = (existingStock.approvisionnement || 0) + quantiteApprovisionnement; // Additionner à l'approvisionnement existant
+                stockRef.update({
+                    quantite: newQuantite,
+                    prixAchat: prixAchat,
+                    approvisionnement: newApprovisionnementTotal,
+                    prixVenteDetail: prixVenteDetail,
+                    prixVenteGros: prixVenteGros
+                })
+                .then(() => {
+                     // Enregistrer l'événement d'approvisionnement
+                    const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
+                    approvisionnementRef.set({
+                        dateApprovisionnement: dateApprovisionnement,
+                        produit: produit,
+                        quantiteApprovisionnement: quantiteApprovisionnement,
+                        prixAchatUnitaire: prixAchat,
+                        vendeurApprovisionnement: vendeurApprovisionnement
+                    }).then(() => {
+                        showStatusMessage('Stock mis à jour et approvisionnement enregistré avec succès!');
+                        stockForm.reset();
+                        chargerStock(boutique);
+                        updateCapitalGeneralAndBeneficeGeneral(boutique);
+                    }).catch(error => {
+                        console.error("Erreur lors de l'enregistrement de l'approvisionnement:", error);
+                        showStatusMessage("Erreur lors de l'enregistrement de l'approvisionnement.", false);
+                    });
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la mise à jour du stock:", error);
+                    showStatusMessage("Erreur lors de la mise à jour du stock.", false);
+                });
+            }
+
         } else {
-            // Le produit n'existe pas, l'ajouter au stock
+            // Le produit n'existe pas, l'ajouter au stock (mode "Ajouter au stock" pour nouveau produit)
             stockRef.set({
                 quantite: stockInitial + quantiteApprovisionnement, // Stock final est stock initial + approvisionnement
                 prixAchat: prixAchat,
@@ -460,24 +533,68 @@ stockForm.addEventListener('submit', function(event) {
     });
 });
 
-// Fonction pour mettre à jour le stock (inchangée, fonctionne toujours pour les ventes)
+
+
+// Fonction pour mettre à jour le stock (Modifiée pour prélever d'abord de l'approvisionnement et ajuster stockInitial/approvisionnement au retour)
 function mettreAJourStock(produit, quantite, boutique, typeOperation, typeVente) {
     const stockRef = database.ref(`stock/${boutique}/${produit}`);
     stockRef.transaction(stockActuel => {
         if (stockActuel) {
             if (typeOperation === 'vente') {
-                if (stockActuel.quantite >= quantite) {
-                    stockActuel.quantite -= quantite;
-                     if (typeVente === 'detail') {
-                        // Mettre à jour le prix de vente si c'est une vente au détail
-                       return stockActuel;
-                    } else if (typeVente === 'gros') {
+                if (quantite > 0) { // For normal sales (quantity is positive)
+                    if (stockActuel.quantite >= quantite) {
+                        let quantiteVendue = quantite;
 
-                       return stockActuel;
+                        // Prélèvement de l'approvisionnement en premier
+                        if (stockActuel.approvisionnement && stockActuel.approvisionnement > 0) {
+                            const approvisionnementPrelevement = Math.min(stockActuel.approvisionnement, quantiteVendue);
+                            stockActuel.approvisionnement -= approvisionnementPrelevement;
+                            quantiteVendue -= approvisionnementPrelevement;
+                        }
+
+                        // Si de la quantité reste à prélever, prélever du stock initial
+                        if (quantiteVendue > 0 && stockActuel.stockInitial && stockActuel.stockInitial > 0) {
+                            const stockInitialPrelevement = Math.min(stockActuel.stockInitial, quantiteVendue);
+                            stockActuel.stockInitial -= stockInitialPrelevement;
+                            quantiteVendue -= stockInitialPrelevement;
+                        }
+
+                        stockActuel.quantite -= quantite;
+
+                         if (typeVente === 'detail') {
+                            // Mettre à jour le prix de vente si c'est une vente au détail
+                           return stockActuel;
+                        } else if (typeVente === 'gros') {
+                           return stockActuel;
+                        }
+                    } else {
+                        showStatusMessage("Quantité insuffisante en stock.", false);
+                        return; // Annuler la transaction
                     }
-                } else {
-                    showStatusMessage("Quantité insuffisante en stock.", false);
-                    return; // Annuler la transaction
+                } else if (quantite < 0) { // For stock return/reversal (quantity is negative)
+                    const quantiteRetour = -quantite; // Make quantity positive for adding back
+                    stockActuel.quantite += quantiteRetour;
+
+                    // Ajouter à l'approvisionnement en premier
+                    if (stockActuel.approvisionnement !== undefined) {
+                        stockActuel.approvisionnement += quantiteRetour;
+                    } else {
+                        stockActuel.approvisionnement = quantiteRetour; // Initialize if approvisionnement is not set
+                    }
+
+                    // S'assurer que l'approvisionnement ne devienne pas négatif (cas improbable mais possible si logique précédente incorrecte)
+                    if (stockActuel.approvisionnement < 0) {
+                        const excessNegatifApprovisionnement = -stockActuel.approvisionnement;
+                        stockActuel.approvisionnement = 0;
+                        if (stockActuel.stockInitial !== undefined) {
+                            stockActuel.stockInitial += excessNegatifApprovisionnement;
+                        } else {
+                            stockActuel.stockInitial = excessNegatifApprovisionnement;
+                        }
+                    }
+                     return stockActuel;
+
+
                 }
             } else if (typeOperation === 'ajout') {
                 stockActuel.quantite += quantite;
@@ -588,68 +705,24 @@ function supprimerProduitDuStock(produit, boutique) {
 }
 // Fonction pour approvisionner un produit du stock (améliorée pour utiliser le formulaire)
 function approvisionnerProduitDuStock(produit, boutique) {
-    // Pré-remplir le formulaire de stock avec le produit à approvisionner
-    document.getElementById('produitStock').value = produit;
-    document.getElementById('produitStock').readOnly = true; // Optionnel: rendre le champ produit non modifiable
-    document.getElementById('stockInitial').value = 0; // Réinitialiser stock initial pour approvisionnement
-    document.getElementById('approvisionnement').focus(); // Focus sur le champ approvisionnement
-    stockForm.querySelector('button[type="submit"]').textContent = 'Approvisionner'; // Changer le texte du bouton
+    const stockRef = database.ref(`stock/${boutique}/${produit}`);
+    stockRef.once('value', (snapshot) => {
+        const currentStockData = snapshot.val();
+        if (currentStockData) {
+            // Pré-remplir le formulaire de stock avec les données actuelles du produit
+            document.getElementById('produitStock').value = produit;
+            document.getElementById('produitStock').readOnly = true; // Optionnel: rendre le champ produit non modifiable
+            document.getElementById('stockInitial').value = currentStockData.stockInitial !== undefined ? currentStockData.stockInitial : 0;
+            document.getElementById('approvisionnement').value = ''; // laisser le champ approvisionnement vide
+            document.getElementById('prixAchat').value = currentStockData.prixAchat;
 
-    // Gestionnaire d'événement unique pour l'approvisionnement via le formulaire
-    const approvisionnerSubmitHandler = function(event) {
-        event.preventDefault();
-        const produitAppro = document.getElementById('produitStock').value;
-        const approvisionnementQuantite = parseInt(document.getElementById('approvisionnement').value);
-        const prixAchatAppro = parseFloat(document.getElementById('prixAchat').value);
-        const dateApprovisionnement = new Date().toISOString().split('T')[0];
-        const vendeurApprovisionnement = currentUser;
+            stockForm.querySelector('button[type="submit"]').textContent = 'Approvisionner'; // Changer le texte du bouton
+            stockForm.dataset.approvisionnerProduit = produit; // Marquer le formulaire en mode approvisionnement
 
-        if(isNaN(approvisionnementQuantite) || approvisionnementQuantite <= 0 || isNaN(prixAchatAppro) || prixAchatAppro < 0) {
-            showStatusMessage("Veuillez entrer une quantité et un prix d'achat valides pour l'approvisionnement.", false);
-            return;
+        } else {
+            showStatusMessage("Produit non trouvé dans le stock.", false);
         }
-
-        const stockRef = database.ref(`stock/${boutique}/${produitAppro}`);
-        stockRef.transaction(currentStock => {
-            if (currentStock) {
-                currentStock.quantite += approvisionnementQuantite;
-                currentStock.approvisionnement = (currentStock.approvisionnement || 0) + approvisionnementQuantite; // Mettre à jour total approvisionné
-                currentStock.prixAchat = prixAchatAppro; // Mettre à jour prix d'achat si nécessaire
-            }
-            return currentStock;
-        }, (error, committed, snapshot) => {
-            if (error) {
-                console.error("Erreur lors de l'approvisionnement du stock:", error);
-                showStatusMessage("Erreur lors de l'approvisionnement du stock.", false);
-            } else if (committed) {
-                 // Enregistrer l'événement d'approvisionnement séparément
-                const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
-                approvisionnementRef.set({
-                    dateApprovisionnement: dateApprovisionnement,
-                    produit: produitAppro,
-                    quantiteApprovisionnement: approvisionnementQuantite,
-                    prixAchatUnitaire: prixAchatAppro,
-                    vendeurApprovisionnement: vendeurApprovisionnement
-                }).then(() => {
-                    showStatusMessage(`${produitAppro} approvisionné avec succès!`);
-                    stockForm.reset();
-                    document.getElementById('produitStock').readOnly = false; // Réactiver le champ produit
-                    stockForm.querySelector('button[type="submit"]').textContent = 'Ajouter au stock'; // Restaurer le texte du bouton
-                    chargerStock(boutique);
-                    updateCapitalGeneralAndBeneficeGeneral(boutique);
-                    stockForm.removeEventListener('submit', approvisionnerSubmitHandler); // Supprimer ce gestionnaire après utilisation
-                }).catch(error => {
-                    console.error("Erreur lors de l'enregistrement de l'approvisionnement:", error);
-                    showStatusMessage("Erreur lors de l'enregistrement de l'approvisionnement.", false);
-                });
-
-            } else {
-                showStatusMessage("Approvisionnement annulé.", false);
-            }
-        });
-    };
-
-    stockForm.addEventListener('submit', approvisionnerSubmitHandler); // Ajouter le gestionnaire d'événement unique
+    });
 }
 
 
@@ -729,9 +802,6 @@ function chargerStockToutesBoutiques() {
 
                         row.insertCell().textContent = totalPurchasePrice.toFixed(2);
                         row.insertCell().textContent = totalSellingPrice.toFixed(2);
-
-                        totalPurchasePriceSumAllBoutiques += totalPurchasePrice;
-                        totalSellingPriceSumAllBoutiques += totalSellingPrice;
 
                         row.insertCell().textContent = 'Non applicable'; // Actions non applicables en mode "Toutes les boutiques"
                     });
@@ -1041,6 +1111,42 @@ function chargerVentesDuJour(boutique) {
          // Appel de la fonction pour mettre à jour le graphique
         updateVentesChart(boutique);
     });
+}
+// Charger les ventes du jour pour toutes les boutiques
+function chargerVentesDuJourToutesBoutiques() {
+    let totalVentesDuJour = 0;
+    const boutiques = ['Boutique1', 'Boutique2', 'Boutique3'];
+    const boutiquesRef = database.ref('boutiques');
+     boutiquesRef.once('value').then((snapshot) => {
+         snapshot.forEach(childSnapshot => {
+                boutiques.push(childSnapshot.key);
+            });
+            const today = new Date().toISOString().split('T')[0];
+            const promises = boutiques.map(boutique => {
+                return new Promise(resolve => {
+                    const ventesRef = database.ref(`ventes/${boutique}`);
+                    ventesRef.once('value', (snapshot) => {
+                        let ventesDuJourBoutique = 0;
+                        const ventes = snapshot.val();
+                        if (ventes) {
+                            for (const venteId in ventes) {
+                                if (ventes[venteId].date === today) {
+                                    ventesDuJourBoutique++;
+                                }
+                            }
+                        }
+                        totalVentesDuJour += ventesDuJourBoutique;
+                        resolve();
+                    });
+                });
+            });
+
+            Promise.all(promises).then(() => {
+                ventesJourSpan.textContent = totalVentesDuJour;
+                updateVentesChartToutesBoutiques();
+            });
+       });
+
 }
 
 // Fonction pour charger les alertes de stock
@@ -1554,8 +1660,8 @@ function updateCapitalGeneralAndBeneficeGeneral(boutique) {
         if (stockData) {
             for (const produit in stockData) {
                 const details = stockData[produit];
-                capitalGeneral += (details.stockInitial !== undefined ? details.stockInitial : 0) * details.prixAchat; // Capital basé sur stock initial et prix d'achat
-                beneficeGeneralEstime += details.quantite * (details.prixVenteDetail - details.prixAchat); // Bénéfice estimé si tout le stock actuel est vendu au détail
+                    capitalGeneral += (details.stockInitial !== undefined ? details.stockInitial : 0) * details.prixAchat; // Capital basé sur stock initial et prix d'achat
+                    beneficeGeneralEstime += details.quantite * (details.prixVenteDetail - details.prixAchat); // Bénéfice estimé si tout le stock actuel est vendu au détail
             }
         }
         capitalGeneralSpan.textContent = capitalGeneral.toFixed(2);
@@ -1675,4 +1781,26 @@ function chargerDepensesToutesBoutiques() {
                 });
             });
        });
+}
+
+// Fonction pour approvisionner un produit du stock (améliorée pour utiliser le formulaire)
+function approvisionnerProduitDuStock(produit, boutique) {
+    const stockRef = database.ref(`stock/${boutique}/${produit}`);
+    stockRef.once('value', (snapshot) => {
+        const currentStockData = snapshot.val();
+        if (currentStockData) {
+            // Pré-remplir le formulaire de stock avec les données actuelles du produit
+            document.getElementById('produitStock').value = produit;
+            document.getElementById('produitStock').readOnly = true; // Optionnel: rendre le champ produit non modifiable
+            document.getElementById('stockInitial').value = currentStockData.stockInitial !== undefined ? currentStockData.stockInitial : 0;
+            document.getElementById('approvisionnement').value = ''; // laisser le champ approvisionnement vide
+            document.getElementById('prixAchat').value = currentStockData.prixAchat;
+
+            stockForm.querySelector('button[type="submit"]').textContent = 'Approvisionner'; // Changer le texte du bouton
+            stockForm.dataset.approvisionnerProduit = produit; // Marquer le formulaire en mode approvisionnement
+
+        } else {
+            showStatusMessage("Produit non trouvé dans le stock.", false);
+        }
+    });
 }
