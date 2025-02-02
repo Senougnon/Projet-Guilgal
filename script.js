@@ -90,6 +90,11 @@ function afficherSection(sectionId) {
             section.classList.add('hidden');
         }
     });
+
+    if (sectionId === 'ventes') {
+        const boutique = boutiqueSelect.value;
+        chargerProduitsPourBoutique(boutique); // Load products for the selected boutique in ventes section
+    }
 }
 
 navLinks.forEach(link => {
@@ -192,23 +197,48 @@ function getProduits() {
   produitsRef.on('value', (snapshot) => {
     const produits = snapshot.val();
     const produitsListe = document.getElementById('produitsListe');
-    const produitVenteSelect = document.getElementById('produitVente');
     produitsListe.innerHTML = '';
-    produitVenteSelect.innerHTML = '<option value="">Sélectionnez un produit</option>';
 
     for (const produitId in produits) {
       const produit = produits[produitId];
       const option = document.createElement('option');
       option.value = produit.nom;
       produitsListe.appendChild(option);
-
-      const optionVente = document.createElement('option');
-      optionVente.value = produit.nom;
-      optionVente.text = produit.nom;
-      produitVenteSelect.appendChild(optionVente);
     }
   });
 }
+
+function chargerProduitsPourBoutique(boutique) {
+    const produitVenteSelect = document.getElementById('produitVente');
+    produitVenteSelect.innerHTML = '<option value="">Sélectionnez un produit</option>'; // Reset dropdown
+
+    if (boutique === 'Toutes') {
+        produitVenteSelect.disabled = true; // Disable if 'Toutes' is selected
+        const option = document.createElement('option');
+        option.value = '';
+        option.text = 'Sélectionnez une boutique d\'abord';
+        produitVenteSelect.appendChild(option);
+
+        return; // Exit function if 'Toutes' is selected
+    } else {
+        produitVenteSelect.disabled = false; // Enable if a specific boutique is selected
+    }
+
+
+    const stockRef = database.ref(`stock/${boutique}`);
+    stockRef.once('value', (snapshot) => {
+        const stock = snapshot.val();
+        if (stock) {
+            for (const produitNom in stock) {
+                const optionVente = document.createElement('option');
+                optionVente.value = produitNom;
+                optionVente.text = produitNom;
+                produitVenteSelect.appendChild(optionVente);
+            }
+        }
+    });
+}
+
 
 getProduits();
 
@@ -234,6 +264,12 @@ function showStatusMessage(message, isSuccess = true) {
 venteForm.addEventListener('submit', function(event) {
     event.preventDefault();
     const venteId = venteForm.dataset.venteId;
+    const boutique = boutiqueSelect.value;
+
+     if (boutique === 'Toutes') {
+        showStatusMessage('Veuillez sélectionner une boutique avant d\'enregistrer une vente.', false);
+        return;
+    }
 
     if (venteId) {
         const dateVente = document.getElementById('dateVente').value;
@@ -245,7 +281,6 @@ venteForm.addEventListener('submit', function(event) {
         const nomClient = document.getElementById('nomClient').value;
         const telClient = document.getElementById('telClient').value;
         const estPaye = document.getElementById('estPaye').checked;
-        const boutique = boutiqueSelect.value;
         const prixTotal = quantiteVente * prixUnitaireVente;
         const vendeur = currentUser;
 
@@ -293,7 +328,6 @@ venteForm.addEventListener('submit', function(event) {
         const nomClient = document.getElementById('nomClient').value;
         const telClient = document.getElementById('telClient').value;
         const estPaye = document.getElementById('estPaye').checked;
-        const boutique = boutiqueSelect.value;
         const prixTotal = quantiteVente * prixUnitaireVente;
         const vendeur = currentUser;
 
@@ -402,7 +436,7 @@ function supprimerVente(venteId, boutique) {
 document.getElementById('produitVente').addEventListener('change', function() {
     const produitVenteNom = this.value;
     const boutique = boutiqueSelect.value;
-    if (produitVenteNom && boutique) {
+    if (produitVenteNom && boutique && boutique !== 'Toutes') {
         const stockRef = database.ref(`stock/${boutique}/${produitVenteNom}`);
         stockRef.once('value', (snapshot) => {
             const stockData = snapshot.val();
@@ -427,6 +461,11 @@ stockForm.addEventListener('submit', function(event) {
     const dateApprovisionnement = new Date().toISOString().split('T')[0];
     const vendeurApprovisionnement = currentUser;
     const isApprovisionnerMode = stockForm.querySelector('button[type="submit"]').textContent === 'Approvisionner';
+
+    if (boutique === 'Toutes') {
+        showStatusMessage('Veuillez sélectionner une boutique pour gérer le stock.', false);
+        return;
+    }
 
     const prixVenteDetail = prixAchat * (1 + (detailMarkupPercentage / 100));
     const prixVenteGros = prixAchat * (1 + (wholesaleMarkupPercentage / 100));
@@ -764,6 +803,7 @@ boutiqueSelect.addEventListener('change', () => {
      updateCapitalGeneralAndBeneficeGeneral(boutique);
      chargerRecouvrements(boutique);
      updateVentesChart(boutique);
+     chargerProduitsPourBoutique(boutique); // Update product list in ventes section
 
     const today = new Date().toISOString().split('T')[0];
     const nextWeek = new Date();
@@ -1602,6 +1642,11 @@ depenseForm.addEventListener('submit', function(event) {
     const montantDepense = parseFloat(document.getElementById('montantDepense').value);
     const categorieDepense = document.getElementById('categorieDepense').value;
     const boutique = boutiqueSelect.value;
+
+    if (boutique === 'Toutes') {
+        showStatusMessage('Veuillez sélectionner une boutique pour enregistrer une dépense.', false);
+        return;
+    }
 
     const depenseRef = database.ref(`depenses/${boutique}`).push();
     depenseRef.set({
