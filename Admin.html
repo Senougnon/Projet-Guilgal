@@ -151,11 +151,6 @@
                 <label for="boutiqueName">Nom de la boutique</label>
                 <input type="text" id="boutiqueName" required>
 
-                <label for="tauxGros">Taux de vente en gros (par rapport au détail)</label>
-                <input type="number" id="tauxGros" min="0" max="1" step="0.01" required>
-
-                <label for="boutiqueParams">Paramètres supplémentaires (JSON)</label>
-                <textarea id="boutiqueParams" rows="4" placeholder='{"key": "value"}'></textarea>
 
                 <div id="boutiqueErrorMessage" class="hidden"></div>
                 <button type="submit">Enregistrer la boutique</button>
@@ -168,8 +163,6 @@
                 <thead>
                     <tr>
                         <th>Nom</th>
-                        <th>Taux de vente en gros</th>
-                        <th>Paramètres</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -267,8 +260,6 @@
                         const boutique = boutiques[boutiqueId];
                         const row = boutiqueTable.insertRow();
                         row.insertCell().textContent = boutique.name;
-                        row.insertCell().textContent = boutique.tauxGros;
-                        row.insertCell().textContent = boutique.params ? JSON.stringify(boutique.params) : '';
 
                         const actionsCell = row.insertCell();
                         const actionIcons = document.createElement('div');
@@ -278,8 +269,6 @@
                         editIcon.className = 'fas fa-edit';
                         editIcon.addEventListener('click', () => {
                             document.getElementById('boutiqueName').value = boutique.name;
-                            document.getElementById('tauxGros').value = boutique.tauxGros;
-                            document.getElementById('boutiqueParams').value = boutique.params ? JSON.stringify(boutique.params) : '';
                             boutiqueForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
                             boutiqueForm.dataset.boutiqueId = boutiqueId;
                         });
@@ -304,27 +293,13 @@
             event.preventDefault();
             const boutiqueId = boutiqueForm.dataset.boutiqueId;
             const boutiqueName = document.getElementById('boutiqueName').value;
-            const tauxGros = parseFloat(document.getElementById('tauxGros').value);
-            const boutiqueParams = document.getElementById('boutiqueParams').value;
 
-            let params = null;
-            if (boutiqueParams) {
-                try {
-                    params = JSON.parse(boutiqueParams);
-                } catch (error) {
-                    boutiqueErrorMessage.textContent = 'Erreur de syntaxe JSON pour les paramètres.';
-                    boutiqueErrorMessage.classList.remove('hidden');
-                    return;
-                }
-            }
 
             if (boutiqueId) {
                 // Update existing boutique
                 const boutiqueRef = database.ref(`boutiques/${boutiqueId}`);
                 boutiqueRef.update({
                     name: boutiqueName,
-                    tauxGros: tauxGros,
-                    params: params
                 })
                 .then(() => {
                     alert('Boutique mise à jour avec succès!');
@@ -343,8 +318,6 @@
                 const newBoutiqueRef = database.ref('boutiques').push();
                 newBoutiqueRef.set({
                     name: boutiqueName,
-                    tauxGros: tauxGros,
-                    params: params
                 })
                 .then(() => {
                     alert('Boutique ajoutée avec succès!');

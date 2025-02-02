@@ -51,6 +51,7 @@ nav ul li a:hover {
     justify-content: center;
     gap: 15px;
     margin-top: 20px;
+    margin-bottom: 20px; /* Added margin bottom for better spacing */
 }
 
 .filters select, .filters input[type="date"], .filters button {
@@ -213,6 +214,10 @@ button:hover {
 #beneficesTable th {
     background-color: #f0f0f0;
     font-weight: bold;
+}
+#beneficesTable tfoot th, #beneficesTable tfoot td {
+    font-weight: bold;
+    background-color: #e9ecef;
 }
 
 #beneficeDetails {
@@ -451,27 +456,26 @@ footer p {
 }
 
 /* Styles pour les tableaux d'analyse des ventes */
-#topVentesSemaine, #topVentesMois, #invendusSemaine, #invendusMois, #ventesParVendeur {
+#topVentesTable, #invendusTable, #ventesParVendeur {
     width: 100%;
     margin-bottom: 20px;
     border-collapse: collapse;
 }
 
-#topVentesSemaine th, #topVentesMois th, #invendusSemaine th, #invendusMois th, #ventesParVendeur th,
-#topVentesSemaine td, #topVentesMois td, #invendusSemaine td, #invendusMois td, #ventesParVendeur td {
+#topVentesTable th, #invendusTable th, #ventesParVendeur th,
+#topVentesTable td, #invendusTable td, #ventesParVendeur td {
     padding: 8px 12px;
     text-align: left;
     border: 1px solid #ddd;
 }
 
-#topVentesSemaine th, #topVentesMois th, #invendusSemaine th, #invendusMois th, #ventesParVendeur th {
+#topVentesTable th, #invendusTable th, #ventesParVendeur th {
     background-color: #e9ecef;
     font-weight: 600;
 }
 
-#topVentesSemaine tbody tr:nth-child(even), #topVentesMois tbody tr:nth-child(even),
-#invendusSemaine tbody tr:nth-child(even), #invendusMois tbody tr:nth-child(even), #ventesParVendeur tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
+#topVentesTable tbody tr:nth-child(even), #invendusTable tbody tr:nth-child(even), #ventesParVendeur tbody tr:nth-child(even) {
+    background-color: #f8f9f9;
 }
 /* Styles pour le tableau des ventes */
 #ventesTable {

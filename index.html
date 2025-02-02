@@ -193,7 +193,7 @@
                 </div>
                 <div id="beneficeDetails">
                   <h3>Dépenses : <span id="depenses"></span> </h3>
-                  <h3>Bénéfice total : <span id="beneficeTotal"></span></h3>
+                  <h3>Bénéfice net : <span id="beneficeNet"></span></h3>
                   <table id="beneficesTable">
                       <thead>
                           <tr>
@@ -203,6 +203,12 @@
                       </thead>
                       <tbody>
                       </tbody>
+                      <tfoot>
+                          <tr>
+                              <th>Total Bénéfice</th>
+                              <th id="totalBeneficeTable"></th>
+                          </tr>
+                      </tfoot>
                   </table>
                 </div>
             </section>
@@ -244,31 +250,24 @@
              <section id="analyse" class="section hidden">
                 <h2>Analyse des ventes</h2>
 
+                <div class="filters">
+                    <select id="periodeAnalyse">
+                        <option value="semaine">Cette semaine</option>
+                        <option value="mois">Ce mois</option>
+                        <option value="personnalise">Personnalisé</option>
+                    </select>
+                    <input type="date" id="dateDebutAnalyse" class="hidden">
+                    <input type="date" id="dateFinAnalyse" class="hidden">
+                    <button id="appliquerAnalyse">Appliquer</button>
+                </div>
+
                 <h3>Top des ventes</h3>
                 <div class="card">
-                    <h4>Par semaine</h4>
+                    <h4>Produits les plus vendus</h4>
                      <div class="table-header">
-                      <button id="printTopVentesSemaine" class="print-button" data-table="topVentesSemaine"><i class="fas fa-print"></i> Imprimer</button>
+                      <button id="printTopVentes" class="print-button" data-table="topVentesTable"><i class="fas fa-print"></i> Imprimer</button>
                      </div>
-                    <table id="topVentesSemaine">
-                        <thead>
-                            <tr>
-                                <th>Rang</th>
-                                <th>Produit</th>
-                                <th>Nombre de ventes</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Les données seront insérées ici -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="card">
-                    <h4>Par mois</h4>
-                     <div class="table-header">
-                      <button id="printTopVentesMois" class="print-button" data-table="topVentesMois"><i class="fas fa-print"></i> Imprimer</button>
-                     </div>
-                    <table id="topVentesMois">
+                    <table id="topVentesTable">
                         <thead>
                             <tr>
                                 <th>Rang</th>
@@ -282,29 +281,14 @@
                     </table>
                 </div>
 
+
                 <h3>Produits invendus</h3>
                 <div class="card">
-                    <h4>Cette semaine</h4>
+                    <h4>Produits non vendus</h4>
                      <div class="table-header">
-                       <button id="printInvendusSemaine" class="print-button" data-table="invendusSemaine"><i class="fas fa-print"></i> Imprimer</button>
+                       <button id="printInvendus" class="print-button" data-table="invendusTable"><i class="fas fa-print"></i> Imprimer</button>
                      </div>
-                    <table id="invendusSemaine">
-                        <thead>
-                            <tr>
-                                <th>Produit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Les données seront insérées ici -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="card">
-                    <h4>Ce mois</h4>
-                     <div class="table-header">
-                      <button id="printInvendusMois" class="print-button" data-table="invendusMois"><i class="fas fa-print"></i> Imprimer</button>
-                     </div>
-                    <table id="invendusMois">
+                    <table id="invendusTable">
                         <thead>
                             <tr>
                                 <th>Produit</th>
