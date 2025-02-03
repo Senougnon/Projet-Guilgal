@@ -175,9 +175,9 @@ const firebaseConfig = {
 
     function handleAuth(event, type) {
         event.preventDefault();
-           
+
            let username , password;
-           
+
             if(type == 'login'){
               username = document.getElementById('username').value;
              password = document.getElementById('password').value;
@@ -218,6 +218,7 @@ const firebaseConfig = {
             if (admin) {
                sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('currentUser', admin.username); // Stocker le nom d'utilisateur
+                sessionStorage.setItem('currentUserStatus', admin.status); // Stocker le status de l'utilisateur
                 window.location.href = 'index.html';
              } else {
                  errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';

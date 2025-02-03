@@ -66,6 +66,7 @@ const appliquerAnalyseButton = document.getElementById('appliquerAnalyse');
 
 let currentUser = null;
 let currentUserId = null;
+let currentUserStatus = null; // Track user status
 
 // Function to format currency (FCFA) and integers
 function formatCurrency(amount) {
@@ -380,33 +381,35 @@ function chargerVentes(boutique) {
             const actionIcons = document.createElement('div');
             actionIcons.className = 'action-icons';
 
-            const editIcon = document.createElement('i');
-            editIcon.className = 'fas fa-edit';
-            editIcon.addEventListener('click', () => {
-                document.getElementById('dateVente').value = vente.date;
-                document.getElementById('produitVente').value = vente.produit;
-                document.getElementById('quantiteVente').value = vente.quantite;
-                document.getElementById('prixUnitaireVente').value = vente.prixUnitaire;
-                document.getElementById('typeVente').value = vente.type;
-                document.getElementById('imeiVente').value = vente.imei;
-                document.getElementById('nomClient').value = vente.nomClient;
-                document.getElementById('telClient').value = vente.telClient;
-                document.getElementById('estPaye').checked = vente.statutPaiement === 'Payé';
+            if (currentUserStatus !== 'Vendeur') { // Check user status here
+                const editIcon = document.createElement('i');
+                editIcon.className = 'fas fa-edit';
+                editIcon.addEventListener('click', () => {
+                    document.getElementById('dateVente').value = vente.date;
+                    document.getElementById('produitVente').value = vente.produit;
+                    document.getElementById('quantiteVente').value = vente.quantite;
+                    document.getElementById('prixUnitaireVente').value = vente.prixUnitaire;
+                    document.getElementById('typeVente').value = vente.type;
+                    document.getElementById('imeiVente').value = vente.imei;
+                    document.getElementById('nomClient').value = vente.nomClient;
+                    document.getElementById('telClient').value = vente.telClient;
+                    document.getElementById('estPaye').checked = vente.statutPaiement === 'Payé';
 
-                venteForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
-                venteForm.dataset.venteId = childSnapshot.key;
-            });
+                    venteForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+                    venteForm.dataset.venteId = childSnapshot.key;
+                });
 
-            const deleteIcon = document.createElement('i');
-            deleteIcon.className = 'fas fa-trash-alt';
-            deleteIcon.addEventListener('click', () => {
-                if (confirm(`Êtes-vous sûr de vouloir supprimer cette vente ?`)) {
-                    supprimerVente(childSnapshot.key, boutique);
-                }
-            });
+                const deleteIcon = document.createElement('i');
+                deleteIcon.className = 'fas fa-trash-alt';
+                deleteIcon.addEventListener('click', () => {
+                    if (confirm(`Êtes-vous sûr de vouloir supprimer cette vente ?`)) {
+                        supprimerVente(childSnapshot.key, boutique);
+                    }
+                });
 
-            actionIcons.appendChild(editIcon);
-            actionIcons.appendChild(deleteIcon);
+                actionIcons.appendChild(editIcon);
+                actionIcons.appendChild(deleteIcon);
+            }
             actionsCell.appendChild(actionIcons);
         });
     });
@@ -704,35 +707,39 @@ function chargerStock(boutique) {
             const actionIcons = document.createElement('div');
             actionIcons.className = 'action-icons';
 
-            const editIcon = document.createElement('i');
-            editIcon.className = 'fas fa-edit';
-            editIcon.addEventListener('click', () => {
-                document.getElementById('produitStock').value = produit;
-                document.getElementById('stockInitial').value = details.stockInitial !== undefined ? details.stockInitial : 0;
-                document.getElementById('approvisionnement').value = details.approvisionnement !== undefined ? details.approvisionnement : 0;
-                document.getElementById('prixAchat').value = details.prixAchat;
+            if (currentUserStatus !== 'Vendeur') { // Check user status here
+                const editIcon = document.createElement('i');
+                editIcon.className = 'fas fa-edit';
+                editIcon.addEventListener('click', () => {
+                    document.getElementById('produitStock').value = produit;
+                    document.getElementById('stockInitial').value = details.stockInitial !== undefined ? details.stockInitial : 0;
+                    document.getElementById('approvisionnement').value = details.approvisionnement !== undefined ? details.approvisionnement : 0;
+                    document.getElementById('prixAchat').value = details.prixAchat;
 
-                stockForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
-                stockForm.dataset.produit = produit;
-            });
+                    stockForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+                    stockForm.dataset.produit = produit;
+                });
 
-            const deleteIcon = document.createElement('i');
-            deleteIcon.className = 'fas fa-trash-alt';
-            deleteIcon.addEventListener('click', () => {
-                if (confirm(`Êtes-vous sûr de vouloir supprimer ${produit} du stock?`)) {
-                    supprimerProduitDuStock(produit, boutique);
-                }
-            });
+                const deleteIcon = document.createElement('i');
+                deleteIcon.className = 'fas fa-trash-alt';
+                deleteIcon.addEventListener('click', () => {
+                    if (confirm(`Êtes-vous sûr de vouloir supprimer ${produit} du stock?`)) {
+                        supprimerProduitDuStock(produit, boutique);
+                    }
+                });
+
+                actionIcons.appendChild(editIcon);
+                actionIcons.appendChild(deleteIcon);
+            }
+
              const approvisionnerIcon = document.createElement('i');
             approvisionnerIcon.className = 'fas fa-box-open';
             approvisionnerIcon.addEventListener('click', () => {
                 approvisionnerProduitDuStock(produit, boutique);
             });
-
-
-            actionIcons.appendChild(editIcon);
-            actionIcons.appendChild(deleteIcon);
              actionIcons.appendChild(approvisionnerIcon);
+
+
             actionsCell.appendChild(actionIcons);
         });
 
@@ -1359,6 +1366,8 @@ function loadBoutiqueNames() {
 function checkLoginStatus() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn');
     currentUser = sessionStorage.getItem('currentUser');
+    currentUserStatus = sessionStorage.getItem('currentUserStatus'); // Retrieve user status
+
     if (isLoggedIn === 'true' && currentUser) {
         currentUserSpan.textContent = `Connecté en tant que : ${currentUser}`;
         logoutBtn.classList.remove('hidden');
@@ -1388,6 +1397,7 @@ function checkLoginStatus() {
 logoutBtn.addEventListener('click', () => {
     sessionStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentUserStatus'); // Remove user status on logout
     currentUser = null;
     currentUserSpan.textContent = '';
     logoutBtn.classList.add('hidden');
@@ -1683,16 +1693,18 @@ function chargerDepenses(boutique) {
             const actionsCell = row.insertCell();
             const actionIcons = document.createElement('div');
             actionIcons.className = 'action-icons';
+             if (currentUserStatus !== 'Vendeur') { // Check user status here
+                const deleteIcon = document.createElement('i');
+                deleteIcon.className = 'fas fa-trash-alt';
+                deleteIcon.addEventListener('click', () => {
+                    if (confirm(`Êtes-vous sûr de vouloir supprimer cette dépense ?`)) {
+                        supprimerDepense(childSnapshot.key, boutique);
+                    }
+                });
+                 actionIcons.appendChild(deleteIcon);
+            }
 
-            const deleteIcon = document.createElement('i');
-            deleteIcon.className = 'fas fa-trash-alt';
-            deleteIcon.addEventListener('click', () => {
-                if (confirm(`Êtes-vous sûr de vouloir supprimer cette dépense ?`)) {
-                    supprimerDepense(childSnapshot.key, boutique);
-                }
-            });
 
-            actionIcons.appendChild(deleteIcon);
             actionsCell.appendChild(actionIcons);
         });
     });
