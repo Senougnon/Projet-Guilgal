@@ -67,9 +67,7 @@
                     <p id="beneficeGeneral"></p>
                 </div>
                 </div>
-                <div>
-                  <canvas id="ventesChart" width="400" height="200"></canvas>
-                </div>
+
             </section>
 
             <section id="ventes" class="section hidden">
@@ -182,6 +180,25 @@
                             <th></th>
                         </tr>
                     </tfoot>
+                </table>
+
+                <div class="table-header">
+                   <h2>Opérations de Stock</h2>
+                 <button id="printStockOperations" class="print-button" data-table="stockOperationsTable"><i class="fas fa-print"></i> Imprimer</button>
+                </div>
+                <table id="stockOperationsTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Produit</th>
+                            <th>Opération</th>
+                            <th>Quantité Changement</th>
+                            <th>Utilisateur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Stock operations data will be inserted here -->
+                    </tbody>
                 </table>
             </section>
 

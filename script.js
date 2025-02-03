@@ -62,6 +62,7 @@ const periodeAnalyseSelect = document.getElementById('periodeAnalyse');
 const dateDebutAnalyseInput = document.getElementById('dateDebutAnalyse');
 const dateFinAnalyseInput = document.getElementById('dateFinAnalyse');
 const appliquerAnalyseButton = document.getElementById('appliquerAnalyse');
+const stockOperationsTable = document.getElementById('stockOperationsTable').querySelector('tbody');
 
 
 let currentUser = null;
@@ -464,6 +465,7 @@ stockForm.addEventListener('submit', function(event) {
     const dateApprovisionnement = new Date().toISOString().split('T')[0];
     const vendeurApprovisionnement = currentUser;
     const isApprovisionnerMode = stockForm.querySelector('button[type="submit"]').textContent === 'Approvisionner';
+    const operationType = isApprovisionnerMode ? 'Approvisionnement' : 'Ajout Initial'; // Determine operation type
 
     if (boutique === 'Toutes') {
         showStatusMessage('Veuillez sélectionner une boutique pour gérer le stock.', false);
@@ -489,6 +491,7 @@ stockForm.addEventListener('submit', function(event) {
                     prixVenteGros: prixVenteGros
                 })
                 .then(() => {
+                    logStockOperation(boutique, produit, operationType, approvisionnement); // Log operation
                     const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
                     approvisionnementRef.set({
                         dateApprovisionnement: dateApprovisionnement,
@@ -524,6 +527,7 @@ stockForm.addEventListener('submit', function(event) {
                     prixVenteGros: prixVenteGros
                 })
                 .then(() => {
+                     logStockOperation(boutique, produit, operationType, approvisionnement); // Log operation
                      const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
                     approvisionnementRef.set({
                         dateApprovisionnement: dateApprovisionnement,
@@ -557,6 +561,7 @@ stockForm.addEventListener('submit', function(event) {
                 prixVenteGros: prixVenteGros
             })
             .then(() => {
+                logStockOperation(boutique, produit, operationType, stockInitial + approvisionnement); // Log initial add
                 const approvisionnementRef = database.ref(`approvisionnements/${boutique}`).push();
                 approvisionnementRef.set({
                     dateApprovisionnement: dateApprovisionnement,
@@ -597,7 +602,6 @@ stockForm.addEventListener('submit', function(event) {
         }
     });
 });
-
 
 
 function mettreAJourStock(produit, quantite, boutique, typeOperation, typeVente) {
@@ -718,6 +722,7 @@ function chargerStock(boutique) {
 
                     stockForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
                     stockForm.dataset.produit = produit;
+                     logStockOperation(boutique, produit, 'Modification', null); // Log modification operation
                 });
 
                 const deleteIcon = document.createElement('i');
@@ -747,6 +752,7 @@ function chargerStock(boutique) {
         totalSellingPriceValueCell.textContent = formatCurrency(totalSellingPriceSum);
 
         updateCapitalGeneralAndBeneficeGeneral(boutique);
+        chargerStockOperationsLog(boutique); // Load stock operations log when stock is loaded
     });
 }
 
@@ -755,6 +761,7 @@ function supprimerProduitDuStock(produit, boutique) {
     stockRef.remove()
     .then(() => {
         showStatusMessage(`${produit} supprimé du stock avec succès!`);
+        logStockOperation(boutique, produit, 'Suppression', null); // Log deletion operation
         chargerStock(boutique);
         updateCapitalGeneralAndBeneficeGeneral(boutique);
     })
@@ -784,6 +791,34 @@ function approvisionnerProduitDuStock(produit, boutique) {
     });
 }
 
+function logStockOperation(boutique, produit, operationType, quantiteChange) {
+    const stockOperationsRef = database.ref(`stockOperationsLogs/${boutique}`).push();
+    stockOperationsRef.set({
+        date: new Date().toISOString(),
+        produit: produit,
+        operationType: operationType,
+        quantiteChange: quantiteChange ? quantiteChange : 'N/A',
+        utilisateur: currentUser
+    });
+}
+function chargerStockOperationsLog(boutique) {
+    stockOperationsTable.innerHTML = '';
+    const stockOperationsLogRef = database.ref(`stockOperationsLogs/${boutique}`).orderByChild('date').limitToLast(5); // Fetch last 5 operations
+
+    stockOperationsLogRef.on('value', (snapshot) => {
+        stockOperationsTable.innerHTML = ''; // Clear existing table data
+        snapshot.forEach(childSnapshot => {
+            const operation = childSnapshot.val();
+            const row = stockOperationsTable.insertRow();
+            row.insertCell().textContent = operation.date.split('T')[0]; // Date only
+            row.insertCell().textContent = operation.produit;
+            row.insertCell().textContent = operation.operationType;
+            row.insertCell().textContent = operation.quantiteChange;
+            row.insertCell().textContent = operation.utilisateur;
+        });
+    });
+}
+
 
 boutiqueSelect.addEventListener('change', () => {
     const boutique = boutiqueSelect.value;
@@ -794,6 +829,8 @@ boutiqueSelect.addEventListener('change', () => {
          chargerRecouvrementsToutesBoutiques();
          chargerVentesDuJourToutesBoutiques();
          updateVentesChartToutesBoutiques();
+         stockOperationsTable.innerHTML = '<tr><td colspan="5">Sélectionnez une boutique spécifique pour voir l\'historique des opérations de stock.</td></tr>';
+
 
     } else {
         chargerStock(boutique);
@@ -802,6 +839,8 @@ boutiqueSelect.addEventListener('change', () => {
         chargerRecouvrements(boutique);
         chargerVentesDuJour(boutique);
         updateVentesChart(boutique);
+        chargerStockOperationsLog(boutique);
+
 
     }
      chargerVentesDuJour(boutique);
@@ -1579,6 +1618,9 @@ function printTableToPDF(tableId) {
          case 'depensesTable':
             title = 'Liste des dépenses';
             break;
+         case 'stockOperationsTable':
+            title = 'Opérations de Stock';
+            break;
         default:
             title = 'Tableau';
     }
@@ -1622,6 +1664,9 @@ document.getElementById('printVentesParVendeur').addEventListener('click', funct
 });
 document.getElementById('printDepenses').addEventListener('click', function() {
     printTableToPDF('depensesTable');
+});
+document.getElementById('printStockOperations').addEventListener('click', function() {
+    printTableToPDF('stockOperationsTable');
 });
 
 

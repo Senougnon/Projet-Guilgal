@@ -595,3 +595,26 @@ footer p {
     background-position-x: 100%;
     background-position-y: 8px;
 }
+
+/* Style pour le tableau des opérations de stock */
+#stockOperationsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#stockOperationsTable th, #stockOperationsTable td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+#stockOperationsTable th {
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+
+#stockOperationsTable tbody tr:nth-child(even) {
+    background-color: #f8f9f9;
+}
