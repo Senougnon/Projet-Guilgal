@@ -68,37 +68,6 @@
                 </div>
                 </div>
 
-                <div class="charts-filter">
-                    <h3>Graphiques</h3>
-                     <div class="filters">
-                        <label for="dateDebutChart">Date de début:</label>
-                        <input type="date" id="dateDebutChart">
-                        <label for="dateFinChart">Date de fin:</label>
-                        <input type="date" id="dateFinChart">
-                        <button id="appliquerChartFiltre">Appliquer</button>
-                    </div>
-                </div>
-
-                <div class="charts-section">
-                    <div class="chart-container">
-                        <h4>Tendances des Ventes</h4>
-                        <canvas id="salesTrendChart" width="400" height="300"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <h4>Tendances des Bénéfices</h4>
-                        <canvas id="profitTrendChart" width="400" height="300"></canvas>
-                    </div>
-                     <div class="chart-container">
-                        <h4>Répartition des Ventes par Type</h4>
-                        <canvas id="salesTypeChart" width="400" height="300"></canvas>
-                    </div>
-                     <div class="chart-container">
-                        <h4>Top Produits Vendus (Quantité)</h4>
-                        <canvas id="topProductsChart" width="400" height="300"></canvas>
-                    </div>
-
-                </div>
-
             </section>
 
             <section id="ventes" class="section hidden">
@@ -235,13 +204,6 @@
 
             <section id="benefices" class="section hidden">
                 <h2>Bénéfices</h2>
-                 <div class="filters">
-                    <label for="dateDebutBenefice">Date de début:</label>
-                    <input type="date" id="dateDebutBenefice">
-                    <label for="dateFinBenefice">Date de fin:</label>
-                    <input type="date" id="dateFinBenefice">
-                    <button id="appliquerBeneficeFiltre">Appliquer</button>
-                </div>
                  <div class="table-header">
                    <h2>Bénéfices</h2>
                  <button id="printBenefices" class="print-button" data-table="beneficesTable"><i class="fas fa-print"></i> Imprimer</button>

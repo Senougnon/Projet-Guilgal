@@ -63,28 +63,11 @@ const dateDebutAnalyseInput = document.getElementById('dateDebutAnalyse');
 const dateFinAnalyseInput = document.getElementById('dateFinAnalyse');
 const appliquerAnalyseButton = document.getElementById('appliquerAnalyse');
 const stockOperationsTable = document.getElementById('stockOperationsTable').querySelector('tbody');
-const dateDebutBeneficeInput = document.getElementById('dateDebutBenefice');
-const dateFinBeneficeInput = document.getElementById('dateFinBenefice');
-const appliquerBeneficeFiltreButton = document.getElementById('appliquerBeneficeFiltre');
-const dateDebutChartInput = document.getElementById('dateDebutChart');
-const dateFinChartInput = document.getElementById('dateFinChart');
-const appliquerChartFiltreButton = document.getElementById('appliquerChartFiltre');
-
-
-// Chart canvas references
-const salesTrendChartCanvas = document.getElementById('salesTrendChart').getContext('2d');
-const profitTrendChartCanvas = document.getElementById('profitTrendChart').getContext('2d');
-const salesTypeChartCanvas = document.getElementById('salesTypeChart').getContext('2d');
-const topProductsChartCanvas = document.getElementById('topProductsChart').getContext('2d');
 
 
 let currentUser = null;
 let currentUserId = null;
 let currentUserStatus = null; // Track user status
-let currentSalesTrendChart = null;
-let currentProfitTrendChart = null;
-let currentSalesTypeChart = null;
-let currentTopProductsChart = null;
 
 // Function to format currency (FCFA) and integers
 function formatCurrency(amount) {
@@ -127,9 +110,7 @@ navLinks.forEach(link => {
         }
          if (sectionId === 'benefices') {
             const boutique = boutiqueSelect.value;
-            const startDate = dateDebutBeneficeInput.value;
-            const endDate = dateFinBeneficeInput.value;
-            chargerBenefices(boutique, startDate, endDate);
+            chargerBenefices(boutique);
         }
         if (sectionId === 'ventes') {
             const boutique = boutiqueSelect.value;
@@ -152,9 +133,7 @@ navLinks.forEach(link => {
              chargerVentesDuJour(boutique);
              chargerAlertesStock(boutique);
              updateCapitalGeneralAndBeneficeGeneral(boutique);
-              const startDateChart = dateDebutChartInput.value;
-            const endDateChart = dateFinChartInput.value;
-             updateDashboardCharts(boutique, startDateChart, endDateChart);
+             updateVentesChart(boutique);
               const today = new Date().toISOString().split('T')[0];
              const nextWeek = new Date();
             nextWeek.setDate(nextWeek.getDate() + 7);
@@ -851,7 +830,6 @@ boutiqueSelect.addEventListener('change', () => {
          chargerVentesDuJourToutesBoutiques();
          updateVentesChartToutesBoutiques();
          stockOperationsTable.innerHTML = '<tr><td colspan="5">Sélectionnez une boutique spécifique pour voir l\'historique des opérations de stock.</td></tr>';
-         updateDashboardCharts('Toutes');
 
 
     } else {
@@ -862,7 +840,6 @@ boutiqueSelect.addEventListener('change', () => {
         chargerVentesDuJour(boutique);
         updateVentesChart(boutique);
         chargerStockOperationsLog(boutique);
-        updateDashboardCharts(boutique);
 
 
     }
@@ -926,7 +903,7 @@ function chargerStockToutesBoutiques() {
         updateCapitalGeneralAndBeneficeGeneral('Toutes');
 }
 
-function chargerBenefices(boutique, startDate = null, endDate = null) {
+function chargerBenefices(boutique) {
      beneficesTable.innerHTML = '';
      depensesSpan.textContent = formatCurrency(0);
     if (boutique === 'Toutes') {
@@ -954,7 +931,7 @@ function chargerBenefices(boutique, startDate = null, endDate = null) {
         };
 
         boutiques.forEach(boutique => {
-            calculerEtAfficherBenefices(boutique, startDate, endDate)
+            calculerEtAfficherBenefices(boutique)
                 .then(({ benefices, depenses }) => {
                     fusionnerBenefices(boutique, benefices, depenses);
                 })
@@ -991,7 +968,7 @@ function chargerBenefices(boutique, startDate = null, endDate = null) {
         };
       });
     } else {
-        calculerEtAfficherBenefices(boutique, startDate, endDate)
+        calculerEtAfficherBenefices(boutique)
             .then(({ benefices, totalVentes, depenses }) => {
                 beneficesTable.innerHTML = '';
                 let tableBeneficeSum = 0;
@@ -1025,7 +1002,7 @@ function chargerBenefices(boutique, startDate = null, endDate = null) {
 }
 
 
-function calculerEtAfficherBenefices(boutique, startDate, endDate) {
+function calculerEtAfficherBenefices(boutique) {
     return new Promise((resolve, reject) => {
         const ventesRef = database.ref(`ventes/${boutique}`);
         const depensesRef = database.ref(`depenses/${boutique}`);
@@ -1042,9 +1019,7 @@ function calculerEtAfficherBenefices(boutique, startDate, endDate) {
             if (depensesData) {
                 for (const depenseId in depensesData) {
                     const depense = depensesData[depenseId];
-                    if ((!startDate || depense.dateDepense >= startDate) && (!endDate || depense.dateDepense <= endDate)) {
                         depensesTotales += parseFloat(depense.montantDepense) || 0;
-                    }
                 }
             }
 
@@ -1053,7 +1028,6 @@ function calculerEtAfficherBenefices(boutique, startDate, endDate) {
 
             for (const venteId in ventes) {
                 const vente = ventes[venteId];
-                if ((!startDate || vente.date >= startDate) && (!endDate || vente.date <= endDate)) {
                     totalVentes += vente.prixTotal;
                     quantiteVendue += vente.quantite;
 
@@ -1088,7 +1062,6 @@ function calculerEtAfficherBenefices(boutique, startDate, endDate) {
                             }
                         });
                     });
-                }
             }
             let beneficeTotalCalculated = 0;
             for (const produit in benefices) {
@@ -1444,18 +1417,12 @@ function checkLoginStatus() {
          chargerVentesDuJour(boutique);
          chargerAlertesStock(boutique);
          updateCapitalGeneralAndBeneficeGeneral(boutique);
-          // Set default chart date range to last month
-            const today = new Date();
-            const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0];
-            const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
-            dateDebutChartInput.value = lastMonthStart;
-            dateFinChartInput.value = lastMonthEnd;
-         updateDashboardCharts(boutique, lastMonthStart, lastMonthEnd);
-          const todayDate = new Date().toISOString().split('T')[0];
+         updateVentesChart(boutique);
+          const today = new Date().toISOString().split('T')[0];
              const nextWeek = new Date();
             nextWeek.setDate(nextWeek.getDate() + 7);
             const dateFinSemaine = nextWeek.toISOString().split('T')[0];
-             getSalesBySeller(boutique,  getFirstDayOfCurrentMonth().toISOString().split('T')[0], todayDate);
+             getSalesBySeller(boutique,  getFirstDayOfCurrentMonth().toISOString().split('T')[0], today);
 
 
     } else {
@@ -1535,7 +1502,6 @@ checkLoginStatus();
                 row.insertCell().textContent = sortedProducts[i][0];
                 row.insertCell().textContent = formatInteger(sortedProducts[i][1]);
             }
-            updateTopProductsChart(boutique, sortedProducts);
         }, (error) => {
             console.error("Error fetching top selling products:", error);
         });
@@ -1859,250 +1825,5 @@ function approvisionnerProduitDuStock(produit, boutique) {
         } else {
             showStatusMessage("Produit non trouvé dans le stock.", false);
         }
-    });
-}
-
-appliquerBeneficeFiltreButton.addEventListener('click', () => {
-    const boutique = boutiqueSelect.value;
-    const startDate = dateDebutBeneficeInput.value;
-    const endDate = dateFinBeneficeInput.value;
-    chargerBenefices(boutique, startDate, endDate);
-});
-
-appliquerChartFiltreButton.addEventListener('click', () => {
-    const boutique = boutiqueSelect.value;
-    const startDateChart = dateDebutChartInput.value;
-    const endDateChart = dateFinChartInput.value;
-    updateDashboardCharts(boutique, startDateChart, endDateChart);
-});
-
-
-function updateDashboardCharts(boutique, startDate = null, endDate = null) {
-    updateSalesTrendChart(boutique, startDate, endDate);
-    updateProfitTrendChart(boutique, startDate, endDate);
-    updateSalesTypeChart(boutique, startDate, endDate);
-    getTopSellingProductsForChart(boutique, startDate, endDate);
-}
-
-function updateSalesTrendChart(boutique, startDate = null, endDate = null) {
-    const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
-    ventesRef.once('value', snapshot => {
-        const salesData = snapshot.val();
-        const salesByMonth = {};
-        if (salesData) {
-            for (const boutiqueKey in salesData) {
-                if (boutique === 'Toutes' || boutiqueKey === boutique) {
-                    for (const saleId in salesData[boutiqueKey]) {
-                        const sale = salesData[boutiqueKey][saleId];
-                        if ((!startDate || sale.date >= startDate) && (!endDate || sale.date <= endDate)) { // Date filter
-                            const saleDate = new Date(sale.date);
-                            const monthYear = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
-                            if (!salesByMonth[monthYear]) {
-                                salesByMonth[monthYear] = 0;
-                            }
-                            salesByMonth[monthYear] += sale.prixTotal;
-                        }
-                    }
-                }
-            }
-
-            const sortedMonths = Object.keys(salesByMonth).sort();
-            const labels = sortedMonths.map(monthYear => monthYear);
-            const data = sortedMonths.map(monthYear => salesByMonth[monthYear]);
-
-            if (currentSalesTrendChart) {
-                currentSalesTrendChart.destroy();
-            }
-
-            currentSalesTrendChart = new Chart(salesTrendChartCanvas, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Tendances des Ventes Mensuelles',
-                        data: data,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
-    });
-}
-
-function updateProfitTrendChart(boutique, startDate = null, endDate = null) {
-    const beneficeRef = boutique === 'Toutes' ? database.ref('benefices') : database.ref(`benefices/${boutique}`);
-    beneficeRef.once('value', snapshot => {
-        const beneficeData = snapshot.val();
-        const profitByMonth = {};
-        if (beneficeData) {
-            for (const boutiqueKey in beneficeData) {
-                 if (boutique === 'Toutes' || boutiqueKey === boutique) {
-                    for (const date in beneficeData[boutiqueKey]) {
-                        const beneficeEntry = beneficeData[boutiqueKey][date];
-                        if (beneficeEntry && beneficeEntry.total !== undefined) {
-                             const saleDate = new Date(date);
-                            const saleDateFormatted = saleDate.toISOString().split('T')[0];
-                            if ((!startDate || saleDateFormatted >= startDate) && (!endDate || saleDateFormatted <= endDate)) { // Date filter
-                                const monthYear = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
-                                if (!profitByMonth[monthYear]) {
-                                    profitByMonth[monthYear] = 0;
-                                }
-                                profitByMonth[monthYear] += beneficeEntry.total;
-                            }
-                        }
-                    }
-                 }
-            }
-
-            const sortedMonths = Object.keys(profitByMonth).sort();
-            const labels = sortedMonths.map(monthYear => monthYear);
-            const data = sortedMonths.map(monthYear => profitByMonth[monthYear]);
-
-            if (currentProfitTrendChart) {
-                currentProfitTrendChart.destroy();
-            }
-
-            currentProfitTrendChart = new Chart(profitTrendChartCanvas, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Tendances des Bénéfices Mensuels',
-                        data: data,
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        fill: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        }
-    });
-}
-
-function updateSalesTypeChart(boutique, startDate = null, endDate = null) {
-    const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
-    ventesRef.once('value', snapshot => {
-        const salesData = snapshot.val();
-        let salesTypeCounts = { detail: 0, gros: 0 };
-
-         for (const boutiqueKey in salesData) {
-             if (boutique === 'Toutes' || boutiqueKey === boutique) {
-                for (const saleId in salesData[boutiqueKey]) {
-                    const sale = salesData[boutiqueKey][saleId];
-                     if ((!startDate || sale.date >= startDate) && (!endDate || sale.date <= endDate)) { // Date filter
-                        if (sale.type === 'detail') {
-                            salesTypeCounts.detail++;
-                        } else if (sale.type === 'gros') {
-                            salesTypeCounts.gros++;
-                        }
-                     }
-                }
-             }
-        }
-
-        const labels = ['Détail', 'Gros'];
-        const data = [salesTypeCounts.detail, salesTypeCounts.gros];
-        const backgroundColors = ['rgba(54, 162, 235, 0.8)', 'rgba(255, 206, 86, 0.8)'];
-        const borderColors = ['rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)'];
-
-        if (currentSalesTypeChart) {
-            currentSalesTypeChart.destroy();
-        }
-
-        currentSalesTypeChart = new Chart(salesTypeChartCanvas, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Répartition des Types de Ventes',
-                    data: data,
-                    backgroundColor: backgroundColors,
-                    borderColor: borderColors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-    });
-}
-
-function updateTopProductsChart(boutique, sortedProducts) {
-    const topProducts = sortedProducts.slice(0, 5);
-    const labels = topProducts.map(item => item[0]);
-    const data = topProducts.map(item => item[1]);
-    const backgroundColors = [
-        'rgba(255, 99, 132, 0.8)',
-        'rgba(255, 159, 64, 0.8)',
-        'rgba(255, 205, 86, 0.8)',
-        'rgba(75, 192, 192, 0.8)',
-        'rgba(54, 162, 235, 0.8)'
-    ];
-    const borderColors = [
-        'rgba(255, 99, 132, 1)',
-        'rgba(255, 159, 64, 1)',
-        'rgba(255, 205, 86, 1)',
-        'rgba(75, 192, 192, 1)',
-        'rgba(54, 162, 235, 1)'
-    ];
-
-    if (currentTopProductsChart) {
-        currentTopProductsChart.destroy();
-    }
-
-    currentTopProductsChart = new Chart(topProductsChartCanvas, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Top 5 Produits Vendus',
-                data: data,
-                backgroundColor: backgroundColors,
-                borderColor: borderColors,
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y', // for horizontal bar chart
-        }
-    });
-}
-
-function getTopSellingProductsForChart(boutique, startDate = null, endDate = null) {
-    const ventesRef = boutique === 'Toutes' ? database.ref('ventes') : database.ref(`ventes/${boutique}`);
-    ventesRef.once('value', (snapshot) => {
-        const allVentes = snapshot.val();
-        let ventes = {};
-
-        for (const boutiqueKey in allVentes) {
-            if (boutique === 'Toutes' || boutiqueKey === boutique) {
-                for (const venteId in allVentes[boutiqueKey]) {
-                    const vente = allVentes[boutiqueKey][venteId];
-                     if ((!startDate || vente.date >= startDate) && (!endDate || vente.date <= endDate)) { // Date filter
-                        if (!ventes[vente.produit]) {
-                            ventes[vente.produit] = 0;
-                        }
-                        ventes[vente.produit]++;
-                     }
-                }
-            }
-        }
-        let sortedProducts = Object.entries(ventes).sort((a, b) => b[1] - a[1]);
-        updateTopProductsChart(boutique, sortedProducts);
-
-    }, (error) => {
-        console.error("Error fetching top selling products for chart:", error);
     });
 }
