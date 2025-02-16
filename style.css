@@ -54,6 +54,11 @@ nav ul li a:hover {
     margin-bottom: 20px; /* Added margin bottom for better spacing */
     flex-wrap: wrap; /* Allow filters to wrap on smaller screens */
 }
+.ventes-filters {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    justify-content: flex-start;
+}
 
 .filters label {
     margin-bottom: 0; /* Adjust label margin if needed */

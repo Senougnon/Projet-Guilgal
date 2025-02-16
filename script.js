@@ -69,6 +69,9 @@ const appliquerBeneficeFiltreButton = document.getElementById('appliquerBenefice
 const dateDebutChartInput = document.getElementById('dateDebutChart');
 const dateFinChartInput = document.getElementById('dateFinChart');
 const appliquerChartFiltreButton = document.getElementById('appliquerChartFiltre');
+const dateDebutVentesInput = document.getElementById('dateDebutVentes');
+const dateFinVentesInput = document.getElementById('dateFinVentes');
+const appliquerVentesFiltreButton = document.getElementById('appliquerVentesFiltre');
 
 
 // Chart canvas references
@@ -114,6 +117,9 @@ function afficherSection(sectionId) {
     if (sectionId === 'ventes') {
         const boutique = boutiqueSelect.value;
         chargerProduitsPourBoutique(boutique); // Load products for the selected boutique in ventes section
+        const startDateVentes = dateDebutVentesInput.value;
+        const endDateVentes = dateFinVentesInput.value;
+        chargerVentes(boutique, startDateVentes, endDateVentes);
     }
 }
 
@@ -134,7 +140,9 @@ navLinks.forEach(link => {
         }
         if (sectionId === 'ventes') {
             const boutique = boutiqueSelect.value;
-            chargerVentes(boutique);
+            const startDateVentes = dateDebutVentesInput.value;
+            const endDateVentes = dateFinVentesInput.value;
+            chargerVentes(boutique, startDateVentes, endDateVentes);
         }
         if (sectionId === 'stock') {
             const boutique = boutiqueSelect.value;
@@ -334,7 +342,9 @@ venteForm.addEventListener('submit', function(event) {
                     venteForm.reset();
                     venteForm.querySelector('button[type="submit"]').textContent = 'Enregistrer';
                     delete venteForm.dataset.venteId;
-                    chargerVentes(boutique);
+                    const startDateVentes = dateDebutVentesInput.value;
+                    const endDateVentes = dateFinVentesInput.value;
+                    chargerVentes(boutique, startDateVentes, endDateVentes);
                 })
                 .catch(error => {
                     console.error("Erreur lors de la mise à jour de la vente:", error);
@@ -373,7 +383,10 @@ venteForm.addEventListener('submit', function(event) {
             showStatusMessage('Vente enregistrée avec succès!');
             venteForm.reset();
             mettreAJourStock(produitVente, quantiteVente, boutique, 'vente', typeVente);
-            chargerVentes(boutique);
+            logStockOperation(boutique, produitVente, 'Vente', -quantiteVente); // Log stock operation for sale
+            const startDateVentes = dateDebutVentesInput.value;
+            const endDateVentes = dateFinVentesInput.value;
+            chargerVentes(boutique, startDateVentes, endDateVentes);
         })
         .catch(error => {
             console.error("Erreur lors de l'enregistrement de la vente:", error);
@@ -382,58 +395,60 @@ venteForm.addEventListener('submit', function(event) {
     }
 });
 
-function chargerVentes(boutique) {
+function chargerVentes(boutique, startDate = null, endDate = null) {
     const ventesRef = database.ref(`ventes/${boutique}`);
     ventesRef.on('value', (snapshot) => {
         ventesTable.innerHTML = '';
         snapshot.forEach(childSnapshot => {
             const vente = childSnapshot.val();
-            const row = ventesTable.insertRow();
-            row.insertCell().textContent = vente.date;
-            row.insertCell().textContent = vente.produit;
-            row.insertCell().textContent = formatInteger(vente.quantite);
-            row.insertCell().textContent = formatCurrency(vente.prixUnitaire);
-            row.insertCell().textContent = formatCurrency(vente.prixTotal);
-            row.insertCell().textContent = vente.type;
-            row.insertCell().textContent = vente.nomClient;
-            row.insertCell().textContent = vente.telClient;
-            row.insertCell().textContent = vente.statutPaiement;
-            row.insertCell().textContent = vente.vendeur;
+            if ((!startDate || vente.date >= startDate) && (!endDate || vente.date <= endDate)) {
+                const row = ventesTable.insertRow();
+                row.insertCell().textContent = vente.date;
+                row.insertCell().textContent = vente.produit;
+                row.insertCell().textContent = formatInteger(vente.quantite);
+                row.insertCell().textContent = formatCurrency(vente.prixUnitaire);
+                row.insertCell().textContent = formatCurrency(vente.prixTotal);
+                row.insertCell().textContent = vente.type;
+                row.insertCell().textContent = vente.nomClient;
+                row.insertCell().textContent = vente.telClient;
+                row.insertCell().textContent = vente.statutPaiement;
+                row.insertCell().textContent = vente.vendeur;
 
-            const actionsCell = row.insertCell();
-            const actionIcons = document.createElement('div');
-            actionIcons.className = 'action-icons';
+                const actionsCell = row.insertCell();
+                const actionIcons = document.createElement('div');
+                actionIcons.className = 'action-icons';
 
-            if (currentUserStatus !== 'Vendeur') { // Check user status here
-                const editIcon = document.createElement('i');
-                editIcon.className = 'fas fa-edit';
-                editIcon.addEventListener('click', () => {
-                    document.getElementById('dateVente').value = vente.date;
-                    document.getElementById('produitVente').value = vente.produit;
-                    document.getElementById('quantiteVente').value = vente.quantite;
-                    document.getElementById('prixUnitaireVente').value = vente.prixUnitaire;
-                    document.getElementById('typeVente').value = vente.type;
-                    document.getElementById('imeiVente').value = vente.imei;
-                    document.getElementById('nomClient').value = vente.nomClient;
-                    document.getElementById('telClient').value = vente.telClient;
-                    document.getElementById('estPaye').checked = vente.statutPaiement === 'Payé';
+                if (currentUserStatus !== 'Vendeur') { // Check user status here
+                    const editIcon = document.createElement('i');
+                    editIcon.className = 'fas fa-edit';
+                    editIcon.addEventListener('click', () => {
+                        document.getElementById('dateVente').value = vente.date;
+                        document.getElementById('produitVente').value = vente.produit;
+                        document.getElementById('quantiteVente').value = vente.quantite;
+                        document.getElementById('prixUnitaireVente').value = vente.prixUnitaire;
+                        document.getElementById('typeVente').value = vente.type;
+                        document.getElementById('imeiVente').value = vente.imei;
+                        document.getElementById('nomClient').value = vente.nomClient;
+                        document.getElementById('telClient').value = vente.telClient;
+                        document.getElementById('estPaye').checked = vente.statutPaiement === 'Payé';
 
-                    venteForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
-                    venteForm.dataset.venteId = childSnapshot.key;
-                });
+                        venteForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+                        venteForm.dataset.venteId = childSnapshot.key;
+                    });
 
-                const deleteIcon = document.createElement('i');
-                deleteIcon.className = 'fas fa-trash-alt';
-                deleteIcon.addEventListener('click', () => {
-                    if (confirm(`Êtes-vous sûr de vouloir supprimer cette vente ?`)) {
-                        supprimerVente(childSnapshot.key, boutique);
-                    }
-                });
+                    const deleteIcon = document.createElement('i');
+                    deleteIcon.className = 'fas fa-trash-alt';
+                    deleteIcon.addEventListener('click', () => {
+                        if (confirm(`Êtes-vous sûr de vouloir supprimer cette vente ?`)) {
+                            supprimerVente(childSnapshot.key, boutique);
+                        }
+                    });
 
-                actionIcons.appendChild(editIcon);
-                actionIcons.appendChild(deleteIcon);
+                    actionIcons.appendChild(editIcon);
+                    actionIcons.appendChild(deleteIcon);
+                }
+                actionsCell.appendChild(actionIcons);
             }
-            actionsCell.appendChild(actionIcons);
         });
     });
 }
@@ -445,10 +460,13 @@ function supprimerVente(venteId, boutique) {
         const vente = snapshot.val();
         if (vente) {
             mettreAJourStock(vente.produit, -vente.quantite, boutique, 'vente', vente.type);
+            logStockOperation(boutique, vente.produit, 'Annulation Vente', vente.quantite); // Log stock operation for sale deletion
             venteRef.remove()
             .then(() => {
                 showStatusMessage(`Vente supprimée avec succès et stock mis à jour!`);
-                chargerVentes(boutique);
+                const startDateVentes = dateDebutVentesInput.value;
+                const endDateVentes = dateFinVentesInput.value;
+                chargerVentes(boutique, startDateVentes, endDateVentes);
             })
             .catch(error => {
                 console.error("Erreur lors de la suppression de la vente:", error);
@@ -869,7 +887,9 @@ boutiqueSelect.addEventListener('change', () => {
     }
      chargerVentesDuJour(boutique);
      chargerAlertesStock(boutique);
-    chargerVentes(boutique);
+    const startDateVentes = dateDebutVentesInput.value;
+    const endDateVentes = dateFinVentesInput.value;
+    chargerVentes(boutique, startDateVentes, endDateVentes);
      updateCapitalGeneralAndBeneficeGeneral(boutique);
      chargerRecouvrements(boutique);
      updateVentesChart(boutique);
@@ -1875,6 +1895,13 @@ appliquerChartFiltreButton.addEventListener('click', () => {
     const startDateChart = dateDebutChartInput.value;
     const endDateChart = dateFinChartInput.value;
     updateDashboardCharts(boutique, startDateChart, endDateChart);
+});
+
+appliquerVentesFiltreButton.addEventListener('click', () => {
+    const boutique = boutiqueSelect.value;
+    const startDateVentes = dateDebutVentesInput.value;
+    const endDateVentes = dateFinVentesInput.value;
+    chargerVentes(boutique, startDateVentes, endDateVentes);
 });
 
 

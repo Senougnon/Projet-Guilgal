@@ -139,6 +139,13 @@
                     <button type="submit">Enregistrer</button>
                 </form>
                  <!-- Tableau pour afficher les ventes -->
+                 <div class="filters ventes-filters">
+                    <label for="dateDebutVentes">Date de début:</label>
+                    <input type="date" id="dateDebutVentes">
+                    <label for="dateFinVentes">Date de fin:</label>
+                    <input type="date" id="dateFinVentes">
+                    <button id="appliquerVentesFiltre">Appliquer</button>
+                </div>
                  <div class="table-header">
                    <h2>Liste des ventes</h2>
                  <button id="printVentes" class="print-button" data-table="ventesTable"><i class="fas fa-print"></i> Imprimer</button>
