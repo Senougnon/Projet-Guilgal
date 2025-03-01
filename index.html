@@ -170,6 +170,13 @@
                     <tbody>
                         <!-- Les données des ventes seront insérées ici -->
                     </tbody>
+                     <tfoot>
+                        <tr>
+                            <th colspan="4" style="text-align:right">Totaux:</th>
+                            <th id="totalVentesTable"></th>
+                            <th colspan="6"></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </section>
 
@@ -237,6 +244,13 @@
                     <tbody>
                         <!-- Stock operations data will be inserted here -->
                     </tbody>
+                     <tfoot>
+                        <tr>
+                            <th colspan="3" style="text-align:right">Totaux:</th>
+                            <th id="totalStockOperationsTable"></th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </section>
 
@@ -295,6 +309,13 @@
                     </thead>
                     <tbody>
                     </tbody>
+                     <tfoot>
+                        <tr>
+                            <th colspan="3" style="text-align:right">Totaux:</th>
+                            <th id="totalRecouvrementTable"></th>
+                            <th colspan="3"></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </section>
              <section id="verifier" class="section hidden">
@@ -340,6 +361,12 @@
                         <tbody>
                             <!-- Les données seront insérées ici -->
                         </tbody>
+                         <tfoot>
+                            <tr>
+                                <th colspan="2" style="text-align:right">Totaux:</th>
+                                <th id="totalTopVentesTable"></th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
 
@@ -359,6 +386,11 @@
                         <tbody>
                             <!-- Les données seront insérées ici -->
                         </tbody>
+                         <tfoot>
+                            <tr>
+                                <th style="text-align:right">Totaux:</th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
                  <h3>Ventes par Vendeur</h3>
@@ -376,12 +408,19 @@
                         <tbody>
                           <!-- Les données seront insérées ici -->
                         </tbody>
+                         <tfoot>
+                            <tr>
+                                <th style="text-align:right">Totaux:</th>
+                                <th id="totalVentesParVendeurTable"></th>
+                            </tr>
+                        </tfoot>
                       </table>
                     </div>
             </section>
 
             <section id="depensesSection" class="section hidden">
                 <h2>Enregistrer une dépense</h2>
+
                 <form id="depenseForm">
                     <label for="dateDepense">Date:</label>
                     <input type="date" id="dateDepense" required><br>
@@ -404,7 +443,13 @@
 
                     <button type="submit">Enregistrer la dépense</button>
                 </form>
-
+                <div class="filters depenses-filters">
+                    <label for="dateDebutDepense">Date de début:</label>
+                    <input type="date" id="dateDebutDepense">
+                    <label for="dateFinDepense">Date de fin:</label>
+                    <input type="date" id="dateFinDepense">
+                    <button id="appliquerDepenseFiltre">Appliquer</button>
+                </div>
                 <div class="table-header">
                     <h2>Liste des dépenses</h2>
                     <button id="printDepenses" class="print-button" data-table="depensesTable"><i class="fas fa-print"></i> Imprimer</button>
@@ -422,6 +467,13 @@
                     <tbody>
                         <!-- Les données des dépenses seront insérées ici -->
                     </tbody>
+                     <tfoot>
+                        <tr>
+                            <th colspan="2" style="text-align:right">Totaux:</th>
+                            <th id="totalDepensesTable"></th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
                 </table>
             </section>
         </main>

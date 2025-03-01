@@ -59,6 +59,11 @@ nav ul li a:hover {
     margin-bottom: 10px;
     justify-content: flex-start;
 }
+.depenses-filters {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    justify-content: flex-start;
+}
 
 .filters label {
     margin-bottom: 0; /* Adjust label margin if needed */
@@ -127,6 +132,10 @@ th {
 
 tr:nth-child(even) {
     background-color: #f8f9f9;
+}
+tfoot {
+    font-weight: bold;
+    background-color: #e9ecef;
 }
 
 form {

@@ -72,6 +72,15 @@ const appliquerChartFiltreButton = document.getElementById('appliquerChartFiltre
 const dateDebutVentesInput = document.getElementById('dateDebutVentes');
 const dateFinVentesInput = document.getElementById('dateFinVentes');
 const appliquerVentesFiltreButton = document.getElementById('appliquerVentesFiltre');
+const dateDebutDepenseInput = document.getElementById('dateDebutDepense');
+const dateFinDepenseInput = document.getElementById('dateFinDepense');
+const appliquerDepenseFiltreButton = document.getElementById('appliquerDepenseFiltre');
+const totalVentesTableSpan = document.getElementById('totalVentesTable');
+const totalRecouvrementTableSpan = document.getElementById('totalRecouvrementTable');
+const totalTopVentesTableSpan = document.getElementById('totalTopVentesTable');
+const totalVentesParVendeurTableSpan = document.getElementById('totalVentesParVendeurTable');
+const totalDepensesTableSpan = document.getElementById('totalDepensesTable');
+const totalStockOperationsTableSpan = document.getElementById('totalStockOperationsTable');
 
 
 // Chart canvas references
@@ -130,7 +139,9 @@ navLinks.forEach(link => {
         afficherSection(sectionId);
          if (sectionId === 'depensesSection') {
             const boutique = boutiqueSelect.value;
-            chargerDepenses(boutique);
+            const startDateDepense = dateDebutDepenseInput.value;
+            const endDateDepense = dateFinDepenseInput.value;
+            chargerDepenses(boutique, startDateDepense, endDateDepense);
         }
          if (sectionId === 'benefices') {
             const boutique = boutiqueSelect.value;
@@ -399,6 +410,7 @@ function chargerVentes(boutique, startDate = null, endDate = null) {
     const ventesRef = database.ref(`ventes/${boutique}`);
     ventesRef.on('value', (snapshot) => {
         ventesTable.innerHTML = '';
+        let totalVentesPrice = 0;
         snapshot.forEach(childSnapshot => {
             const vente = childSnapshot.val();
             if ((!startDate || vente.date >= startDate) && (!endDate || vente.date <= endDate)) {
@@ -448,8 +460,10 @@ function chargerVentes(boutique, startDate = null, endDate = null) {
                     actionIcons.appendChild(deleteIcon);
                 }
                 actionsCell.appendChild(actionIcons);
+                totalVentesPrice += vente.prixTotal;
             }
         });
+        totalVentesTableSpan.textContent = formatCurrency(totalVentesPrice);
     });
 }
 
@@ -843,10 +857,12 @@ function logStockOperation(boutique, produit, operationType, quantiteChange) {
 }
 function chargerStockOperationsLog(boutique) {
     stockOperationsTable.innerHTML = '';
-    const stockOperationsLogRef = database.ref(`stockOperationsLogs/${boutique}`).orderByChild('date').limitToLast(5); // Fetch last 5 operations
+    let totalStockChange = 0;
+    const stockOperationsLogRef = database.ref(`stockOperationsLogs/${boutique}`).orderByChild('date');
 
     stockOperationsLogRef.on('value', (snapshot) => {
         stockOperationsTable.innerHTML = ''; // Clear existing table data
+        totalStockChange = 0;
         snapshot.forEach(childSnapshot => {
             const operation = childSnapshot.val();
             const row = stockOperationsTable.insertRow();
@@ -855,7 +871,11 @@ function chargerStockOperationsLog(boutique) {
             row.insertCell().textContent = operation.operationType;
             row.insertCell().textContent = operation.quantiteChange;
             row.insertCell().textContent = operation.utilisateur;
+             if(operation.quantiteChange && !isNaN(operation.quantiteChange)) {
+                totalStockChange += parseFloat(operation.quantiteChange);
+            }
         });
+        totalStockOperationsTableSpan.textContent = formatInteger(totalStockChange);
     });
 }
 
@@ -1131,8 +1151,11 @@ function calculerEtAfficherBenefices(boutique, startDate, endDate) {
 
 function chargerRecouvrements(boutique) {
     recouvrementTable.innerHTML = '';
+    let totalRecouvrementAmount = 0;
     const recouvrementsRef = database.ref(`ventes/${boutique}`);
     recouvrementsRef.on('value', (snapshot) => {
+        recouvrementTable.innerHTML = '';
+        totalRecouvrementAmount = 0;
         snapshot.forEach(childSnapshot => {
             const vente = childSnapshot.val();
             if (vente.statutPaiement === 'Non payé') {
@@ -1151,8 +1174,10 @@ function chargerRecouvrements(boutique) {
                 });
                 const actionsCell = row.insertCell();
                 actionsCell.appendChild(payerButton);
+                totalRecouvrementAmount += vente.prixTotal;
             }
         });
+        totalRecouvrementTableSpan.textContent = formatCurrency(totalRecouvrementAmount);
     });
 }
 
@@ -1181,6 +1206,7 @@ boutiqueSelect.addEventListener('change', () => {
 
 function chargerRecouvrementsToutesBoutiques() {
     recouvrementTable.innerHTML = '';
+    let totalRecouvrementAmountAllBoutiques = 0;
     const boutiques = [];
     const boutiquesRef = database.ref('boutiques');
      boutiquesRef.once('value').then((snapshot) => {
@@ -1208,11 +1234,13 @@ function chargerRecouvrementsToutesBoutiques() {
                             });
                             const actionsCell = row.insertCell();
                             actionsCell.appendChild(payerButton);
+                            totalRecouvrementAmountAllBoutiques += vente.prixTotal;
                         }
                     });
                 });
             });
        });
+       totalRecouvrementTableSpan.textContent = formatCurrency(totalRecouvrementAmountAllBoutiques);
 }
 
 
@@ -1532,6 +1560,7 @@ checkLoginStatus();
         ventesRef.once('value', (snapshot) => {
             const allVentes = snapshot.val();
             let ventes = {};
+            let totalTopSales = 0;
 
             for (const boutiqueKey in allVentes) {
                 if (boutique === 'Toutes' || boutiqueKey === boutique) {
@@ -1555,7 +1584,9 @@ checkLoginStatus();
                 row.insertCell().textContent = i + 1;
                 row.insertCell().textContent = sortedProducts[i][0];
                 row.insertCell().textContent = formatInteger(sortedProducts[i][1]);
+                totalTopSales += sortedProducts[i][1];
             }
+            totalTopVentesTableSpan.textContent = formatInteger(totalTopSales);
             updateTopProductsChart(boutique, sortedProducts);
         }, (error) => {
             console.error("Error fetching top selling products:", error);
@@ -1609,6 +1640,7 @@ checkLoginStatus();
         ventesRef.once('value', (snapshot) => {
             const allVentes = snapshot.val();
             let salesBySeller = {};
+            let totalSalesValueBySeller = 0;
 
             for (const boutiqueKey in allVentes) {
                 if (boutique === 'Toutes' || boutiqueKey === boutique) {
@@ -1619,6 +1651,7 @@ checkLoginStatus();
                                 salesBySeller[vente.vendeur] = 0;
                             }
                             salesBySeller[vente.vendeur] += vente.prixTotal;
+                            totalSalesValueBySeller += vente.prixTotal;
                         }
                     }
                 }
@@ -1632,6 +1665,7 @@ checkLoginStatus();
                 row.insertCell().textContent = sortedSellers[i][0];
                 row.insertCell().textContent = formatCurrency(sortedSellers[i][1]);
             }
+            totalVentesParVendeurTableSpan.textContent = formatCurrency(totalSalesValueBySeller);
             const topSellerWeek = sortedSellers.length > 0 ? sortedSellers[0][0] : 'N/A';
             topSellerWeekSpan.textContent = topSellerWeek;
 
@@ -1768,7 +1802,9 @@ depenseForm.addEventListener('submit', function(event) {
     .then(() => {
         showStatusMessage('Dépense enregistrée avec succès!');
         depenseForm.reset();
-        chargerDepenses(boutique);
+        const startDateDepense = dateDebutDepenseInput.value;
+        const endDateDepense = dateFinDepenseInput.value;
+        chargerDepenses(boutique, startDateDepense, endDateDepense);
         chargerBenefices(boutique);
     })
     .catch(error => {
@@ -1778,35 +1814,40 @@ depenseForm.addEventListener('submit', function(event) {
 });
 
 
-function chargerDepenses(boutique) {
+function chargerDepenses(boutique, startDate = null, endDate = null) {
     const depensesRef = database.ref(`depenses/${boutique}`);
+    depensesTable.innerHTML = '';
+    let totalDepenseAmount = 0;
     depensesRef.on('value', (snapshot) => {
         depensesTable.innerHTML = '';
+        totalDepenseAmount = 0;
         snapshot.forEach(childSnapshot => {
             const depense = childSnapshot.val();
-            const row = depensesTable.insertRow();
-            row.insertCell().textContent = depense.dateDepense;
-            row.insertCell().textContent = depense.descriptionDepense;
-            row.insertCell().textContent = formatCurrency(depense.montantDepense);
-            row.insertCell().textContent = depense.categorieDepense;
+             if ((!startDate || depense.dateDepense >= startDate) && (!endDate || depense.dateDepense <= endDate)) {
+                const row = depensesTable.insertRow();
+                row.insertCell().textContent = depense.dateDepense;
+                row.insertCell().textContent = depense.descriptionDepense;
+                row.insertCell().textContent = formatCurrency(depense.montantDepense);
+                row.insertCell().textContent = depense.categorieDepense;
 
-            const actionsCell = row.insertCell();
-            const actionIcons = document.createElement('div');
-            actionIcons.className = 'action-icons';
-             if (currentUserStatus !== 'Vendeur') { // Check user status here
-                const deleteIcon = document.createElement('i');
-                deleteIcon.className = 'fas fa-trash-alt';
-                deleteIcon.addEventListener('click', () => {
-                    if (confirm(`Êtes-vous sûr de vouloir supprimer cette dépense ?`)) {
-                        supprimerDepense(childSnapshot.key, boutique);
-                    }
-                });
-                 actionIcons.appendChild(deleteIcon);
+                const actionsCell = row.insertCell();
+                const actionIcons = document.createElement('div');
+                actionIcons.className = 'action-icons';
+                 if (currentUserStatus !== 'Vendeur') { // Check user status here
+                    const deleteIcon = document.createElement('i');
+                    deleteIcon.className = 'fas fa-trash-alt';
+                    deleteIcon.addEventListener('click', () => {
+                        if (confirm(`Êtes-vous sûr de vouloir supprimer cette dépense ?`)) {
+                            supprimerDepense(childSnapshot.key, boutique);
+                        }
+                    });
+                     actionIcons.appendChild(deleteIcon);
+                }
+                actionsCell.appendChild(actionIcons);
+                totalDepenseAmount += depense.montantDepense;
             }
-
-
-            actionsCell.appendChild(actionIcons);
         });
+        totalDepensesTableSpan.textContent = formatCurrency(totalDepenseAmount);
     });
 }
 
@@ -1816,7 +1857,9 @@ function supprimerDepense(depenseId, boutique) {
     depenseRef.remove()
     .then(() => {
         showStatusMessage('Dépense supprimée avec succès!');
-        chargerDepenses(boutique);
+        const startDateDepense = dateDebutDepenseInput.value;
+        const endDateDepense = dateFinDepenseInput.value;
+        chargerDepenses(boutique, startDateDepense, endDateDepense);
         chargerBenefices(boutique);
     })
     .catch(error => {
@@ -1826,6 +1869,7 @@ function supprimerDepense(depenseId, boutique) {
 }
 function chargerDepensesToutesBoutiques() {
     depensesTable.innerHTML = '';
+    let totalDepenseAmountAllBoutiques = 0;
     const boutiques = [];
     const boutiquesRef = database.ref('boutiques');
      boutiquesRef.once('value').then((snapshot) => {
@@ -1857,10 +1901,12 @@ function chargerDepensesToutesBoutiques() {
 
                             actionIcons.appendChild(deleteIcon);
                             actionsCell.appendChild(actionIcons);
+                            totalDepenseAmountAllBoutiques += depense.montantDepense;
                     });
                 });
             });
        });
+       totalDepensesTableSpan.textContent = formatCurrency(totalDepenseAmountAllBoutiques);
 }
 
 function approvisionnerProduitDuStock(produit, boutique) {
@@ -1902,6 +1948,12 @@ appliquerVentesFiltreButton.addEventListener('click', () => {
     const startDateVentes = dateDebutVentesInput.value;
     const endDateVentes = dateFinVentesInput.value;
     chargerVentes(boutique, startDateVentes, endDateVentes);
+});
+appliquerDepenseFiltreButton.addEventListener('click', () => {
+    const boutique = boutiqueSelect.value;
+    const startDateDepense = dateDebutDepenseInput.value;
+    const endDateDepense = dateFinDepenseInput.value;
+    chargerDepenses(boutique, startDateDepense, endDateDepense);
 });
 
 
