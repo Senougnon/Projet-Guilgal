@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Boutique & User Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <style>
+        /* Basic Reset */
+        body, h1, h2, h3, p, ul, li, form, input, button, select {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 15px;
+            color: #007bff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .boutique-form, .user-form, .boutique-list, .user-list, .settings-form {
+            margin-bottom: 30px;
+        }
+
+        .boutique-form h2, .user-form h2, .boutique-list h2, .user-list h2, .settings-form h2 {
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 0.9rem;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #e9ecef;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .action-icons {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .action-icons button {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        .action-icons i {
+            font-size: 1.2rem;
+        }
+
+        .fa-edit {
+            color: #ffc107;
+        }
+
+        .fa-trash-alt {
+            color: #dc3545;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #errorMessage {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel - Boutique & User Management</h1>
+
+        <!-- Boutique Management Section -->
+        <div class="boutique-form">
+            <h2>Ajouter/Modifier une boutique</h2>
+            <form id="boutiqueForm">
+                <label for="boutiqueName">Nom de la boutique</label>
+                <input type="text" id="boutiqueName" required>
+
+
+                <div id="boutiqueErrorMessage" class="hidden"></div>
+                <button type="submit">Enregistrer la boutique</button>
+            </form>
+        </div>
+
+        <div class="boutique-list">
+            <h2>Liste des boutiques</h2>
+            <table id="boutiqueTable">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Boutique data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- User Management Section -->
+        <div class="user-form">
+            <h2>Ajouter/Modifier un utilisateur</h2>
+            <form id="userForm">
+                <label for="email">Email</label>
+                <input type="email" id="email" required>
+
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" required>
+
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password">
+
+                <label for="status">Status</label>
+                <select id="status" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Vendeur">Vendeur</option>
+                    <option value="Visiteur">Visiteur</option>
+                </select>
+
+                <div id="userErrorMessage" class="hidden"></div>
+                <button type="submit">Enregistrer l'utilisateur</button>
+            </form>
+        </div>
+
+        <div class="user-list">
+            <h2>Liste des Utilisateurs</h2>
+            <table id="userTable">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Nom d'utilisateur</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- User data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Settings Management Section -->
+        <div class="settings-form">
+            <h2>Gestion des Paramètres Généraux</h2>
+            <form id="settingsForm">
+                <label for="detailMarkup">Taux de marge prix de vente détail (%)</label>
+                <input type="number" id="detailMarkup" min="0" step="0.01" required>
+
+                <label for="wholesaleMarkup">Taux de marge prix de vente gros (%)</label>
+                <input type="number" id="wholesaleMarkup" min="0" step="0.01" required>
+
+                <div id="settingsErrorMessage" class="hidden"></div>
+                <button type="submit">Enregistrer les paramètres</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration (replace with your actual config)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBuZpGvZsXHuE2djlJtMS-aSKlZLBpMKoo",
+            authDomain: "guilgal-46426.firebaseapp.com",
+            databaseURL: "https://guilgal-46426-default-rtdb.firebaseio.com",
+            projectId: "guilgal-46426",
+            storageBucket: "guilgal-46426.firebasestorage.app",
+            messagingSenderId: "545432703753",
+            appId: "1:545432703753:web:64823e084079f1e57fb9d8",
+            measurementId: "G-0F61YDFCCY"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Boutique Management
+        const boutiqueForm = document.getElementById('boutiqueForm');
+        const boutiqueTable = document.getElementById('boutiqueTable').querySelector('tbody');
+        const boutiqueErrorMessage = document.getElementById('boutiqueErrorMessage');
+
+        function loadBoutiques() {
+            const boutiquesRef = database.ref('boutiques');
+            boutiquesRef.on('value', (snapshot) => {
+                boutiqueTable.innerHTML = '';
+                const boutiques = snapshot.val();
+                if (boutiques) {
+                    for (const boutiqueId in boutiques) {
+                        const boutique = boutiques[boutiqueId];
+                        const row = boutiqueTable.insertRow();
+                        row.insertCell().textContent = boutique.name;
+
+                        const actionsCell = row.insertCell();
+                        const actionIcons = document.createElement('div');
+                        actionIcons.className = 'action-icons';
+
+                        const editIcon = document.createElement('i');
+                        editIcon.className = 'fas fa-edit';
+                        editIcon.addEventListener('click', () => {
+                            document.getElementById('boutiqueName').value = boutique.name;
+                            boutiqueForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+                            boutiqueForm.dataset.boutiqueId = boutiqueId;
+                        });
+
+                        const deleteIcon = document.createElement('i');
+                        deleteIcon.className = 'fas fa-trash-alt';
+                        deleteIcon.addEventListener('click', () => {
+                            if (confirm(`Êtes-vous sûr de vouloir supprimer la boutique ${boutique.name} ?`)) {
+                                deleteBoutique(boutiqueId);
+                            }
+                        });
+
+                        actionIcons.appendChild(editIcon);
+                        actionIcons.appendChild(deleteIcon);
+                        actionsCell.appendChild(actionIcons);
+                    }
+                }
+            });
+        }
+
+        boutiqueForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const boutiqueId = boutiqueForm.dataset.boutiqueId;
+            const boutiqueName = document.getElementById('boutiqueName').value;
+
+
+            if (boutiqueId) {
+                // Update existing boutique
+                const boutiqueRef = database.ref(`boutiques/${boutiqueId}`);
+                boutiqueRef.update({
+                    name: boutiqueName,
+                })
+                .then(() => {
+                    alert('Boutique mise à jour avec succès!');
+                    boutiqueForm.reset();
+                    boutiqueForm.querySelector('button[type="submit"]').textContent = 'Enregistrer la boutique';
+                    delete boutiqueForm.dataset.boutiqueId;
+                    loadBoutiques();
+                })
+                .catch(error => {
+                    boutiqueErrorMessage.textContent = 'Une erreur s\'est produite lors de la mise à jour ' + error.message;
+                    boutiqueErrorMessage.classList.remove('hidden');
+                    console.error("Erreur lors de la mise à jour de la boutique:", error);
+                });
+            } else {
+                // Add new boutique
+                const newBoutiqueRef = database.ref('boutiques').push();
+                newBoutiqueRef.set({
+                    name: boutiqueName,
+                })
+                .then(() => {
+                    alert('Boutique ajoutée avec succès!');
+                    boutiqueForm.reset();
+                    boutiqueErrorMessage.classList.add('hidden');
+                    loadBoutiques();
+                })
+                .catch(error => {
+                    boutiqueErrorMessage.textContent = 'Une erreur s\'est produite lors de l\'ajout ' + error.message;
+                    boutiqueErrorMessage.classList.remove('hidden');
+                    console.error("Erreur lors de l'ajout de la boutique:", error);
+                });
+            }
+        });
+
+        function deleteBoutique(boutiqueId) {
+            const boutiqueRef = database.ref(`boutiques/${boutiqueId}`);
+            boutiqueRef.remove()
+                .then(() => {
+                    alert('Boutique supprimée avec succès!');
+                    loadBoutiques();
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la suppression de la boutique:", error);
+                    boutiqueErrorMessage.textContent = 'Une erreur s\'est produite lors de la suppression ' + error.message;
+                    boutiqueErrorMessage.classList.remove('hidden');
+                });
+        }
+
+        // User Management
+        const userForm = document.getElementById('userForm');
+        const userTable = document.getElementById('userTable').querySelector('tbody');
+        const userErrorMessage = document.getElementById('userErrorMessage');
+
+        function loadUsers() {
+            const usersRef = database.ref('admins');
+            usersRef.on('value', (snapshot) => {
+                userTable.innerHTML = '';
+                const users = snapshot.val();
+                if (users) {
+                    for (const userId in users) {
+                        const user = users[userId];
+                        const row = userTable.insertRow();
+                        row.insertCell().textContent = user.email;
+                        row.insertCell().textContent = user.username;
+                        row.insertCell().textContent = user.status;
+
+                        const actionsCell = row.insertCell();
+                        const actionIcons = document.createElement('div');
+                        actionIcons.className = 'action-icons';
+
+                        const editIcon = document.createElement('i');
+                        editIcon.className = 'fas fa-edit';
+                        editIcon.addEventListener('click', () => {
+                            document.getElementById('email').value = user.email;
+                            document.getElementById('username').value = user.username;
+                            document.getElementById('password').value = user.password;
+                            document.getElementById('status').value = user.status;
+                            userForm.querySelector('button[type="submit"]').textContent = 'Mettre à jour';
+                            userForm.dataset.userId = userId;
+                        });
+
+                        const deleteIcon = document.createElement('i');
+                        deleteIcon.className = 'fas fa-trash-alt';
+                        deleteIcon.addEventListener('click', () => {
+                            if (confirm(`Êtes-vous sûr de vouloir supprimer ${user.username} ?`)) {
+                                deleteUser(userId);
+                            }
+                        });
+
+                        actionIcons.appendChild(editIcon);
+                        actionIcons.appendChild(deleteIcon);
+                        actionsCell.appendChild(actionIcons);
+                    }
+                }
+            });
+        }
+
+        userForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const userId = userForm.dataset.userId;
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const status = document.getElementById('status').value;
+
+            if (userId) {
+                const userRef = database.ref(`admins/${userId}`);
+                userRef.update({
+                    email: email,
+                    username: username,
+                    status: status,
+                    password: password ? password : null
+                })
+                .then(() => {
+                    alert('Utilisateur mis à jour avec succès!');
+                    userForm.reset();
+                    userForm.querySelector('button[type="submit"]').textContent = 'Enregistrer l\'utilisateur';
+                    delete userForm.dataset.userId;
+                    loadUsers();
+                })
+                .catch(error => {
+                    userErrorMessage.textContent = 'Une erreur s\'est produite lors de la mise à jour ' + error.message;
+                    userErrorMessage.classList.remove('hidden');
+                    console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
+                });
+            } else {
+                const userRef = database.ref('admins');
+                userRef.orderByChild('username').equalTo(username).once('value', (snapshot) => {
+                    if (snapshot.exists()) {
+                        userErrorMessage.textContent = 'Ce nom d\'utilisateur est déjà pris.';
+                        userErrorMessage.classList.remove('hidden');
+                    } else {
+                        const newUserRef = userRef.push();
+                        newUserRef.set({
+                            email: email,
+                            username: username,
+                            password: password,
+                            status: status,
+                        })
+                        .then(() => {
+                            alert('Utilisateur ajouté avec succès!');
+                            userForm.reset();
+                            userErrorMessage.classList.add('hidden');
+                            loadUsers();
+                        })
+                        .catch(error => {
+                            userErrorMessage.textContent = 'Une erreur s\'est produite lors de l\'ajout ' + error.message;
+                            userErrorMessage.classList.remove('hidden');
+                            console.error("Erreur lors de l'ajout de l'utilisateur:", error);
+                        });
+                    }
+                });
+            }
+        });
+
+        function deleteUser(userId) {
+            const userRef = database.ref(`admins/${userId}`);
+            userRef.remove()
+                .then(() => {
+                    alert('Utilisateur supprimé avec succès!');
+                    loadUsers();
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la suppression de l'utilisateur:", error);
+                    userErrorMessage.textContent = 'Une erreur s\'est produite lors de la suppression ' + error.message;
+                    userErrorMessage.classList.remove('hidden');
+                });
+        }
+
+        // Settings Management
+        const settingsForm = document.getElementById('settingsForm');
+        const detailMarkupInput = document.getElementById('detailMarkup');
+        const wholesaleMarkupInput = document.getElementById('wholesaleMarkup');
+        const settingsErrorMessage = document.getElementById('settingsErrorMessage');
+
+        function loadSettings() {
+            const settingsRef = database.ref('settings');
+            settingsRef.once('value', (snapshot) => {
+                const settings = snapshot.val();
+                if (settings) {
+                    detailMarkupInput.value = settings.detailMarkup !== undefined ? settings.detailMarkup : '';
+                    wholesaleMarkupInput.value = settings.wholesaleMarkup !== undefined ? settings.wholesaleMarkup : '';
+                }
+            });
+        }
+
+        settingsForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const detailMarkup = parseFloat(detailMarkupInput.value);
+            const wholesaleMarkup = parseFloat(wholesaleMarkupInput.value);
+
+            if (isNaN(detailMarkup) || isNaN(wholesaleMarkup)) {
+                settingsErrorMessage.textContent = 'Veuillez entrer des valeurs numériques valides pour les taux de marge.';
+                settingsErrorMessage.classList.remove('hidden');
+                return;
+            }
+
+            const settingsRef = database.ref('settings');
+            settingsRef.update({
+                detailMarkup: detailMarkup,
+                wholesaleMarkup: wholesaleMarkup
+            })
+            .then(() => {
+                alert('Paramètres généraux mis à jour avec succès!');
+                settingsErrorMessage.classList.add('hidden');
+                loadSettings();
+            })
+            .catch(error => {
+                settingsErrorMessage.textContent = 'Une erreur s\'est produite lors de la mise à jour des paramètres ' + error.message;
+                settingsErrorMessage.classList.remove('hidden');
+                console.error("Erreur lors de la mise à jour des paramètres:", error);
+            });
+        });
+
+
+        // Initial Load
+        loadBoutiques();
+        loadUsers();
+        loadSettings();
+    </script>
+</body>
+</html>

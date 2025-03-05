@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion / Inscription</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+     <link rel="stylesheet" href="styleA.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            line-height: 1.6;
+            color: #fff;
+            background: linear-gradient(135deg, #1a2a6c, #fdbb2d);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+             margin: 0; /* Reset margin for the body */
+            padding: 0; /* Reset padding for the body */
+        }
+        .auth-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            color: #333;
+        }
+         h1 {
+            text-align: center;
+            color: #1a2a6c;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            text-align: left;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1a2a6c;
+        }
+        button {
+            width: 100%;
+            padding: 1rem;
+            background-color: #1a2a6c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0e1639;
+        }
+        .auth-switch {
+            margin-top: 1rem;
+            text-align: center;
+        }
+          .auth-switch a {
+            color: #1a2a6c;
+            text-decoration: none;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+         .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 1rem;
+            display: none;
+        }
+      /* Media query pour les écrans plus petits (smartphones) */
+        @media (max-width: 600px) {
+            .auth-container {
+                padding: 1.5rem;
+                 max-width: 90%;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+                margin-bottom: 1.5rem;
+            }
+
+            input {
+                padding: 0.6rem;
+                font-size: 0.9rem;
+            }
+          button {
+               padding: 0.8rem;
+              font-size: 0.9rem;
+          }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container" id="authContainer">
+        <h1>Connexion</h1>
+        <form id="loginForm" onsubmit="return handleAuth(event, 'login')">
+            <div class="input-group">
+                <label for="username">Nom d'utilisateur</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Se connecter</button>
+        </form>
+        <div class="auth-switch">
+            <p>Pas encore de compte ? <a href="#" id="showRegister">Inscrivez-vous</a></p>
+        </div>
+           <form id="registerForm" style="display: none;" onsubmit="return handleAuth(event, 'register')">
+            <div class="input-group">
+            <label for="emailRegister">Email</label>
+            <input type="email" id="emailRegister" required>
+         </div>
+             <div class="input-group">
+                <label for="usernameRegister">Nom d'utilisateur</label>
+                <input type="text" id="usernameRegister" required>
+            </div>
+            <div class="input-group">
+                <label for="passwordRegister">Mot de passe</label>
+                <input type="password" id="passwordRegister" required>
+            </div>
+               <button type="submit">S'inscrire</button>
+             </form>
+        <div class="auth-switch"  id="loginLink" style="display: none;">
+            <p>Déjà un compte ? <a href="#" id="showLogin">Connectez-vous</a></p>
+        </div>
+           <div id="errorMessage" class="error-message"></div>
+    </div>
+    <script>
+// Configuration Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyBuZpGvZsXHuE2djlJtMS-aSKlZLBpMKoo",
+    authDomain: "guilgal-46426.firebaseapp.com",
+    databaseURL: "https://guilgal-46426-default-rtdb.firebaseio.com",
+    projectId: "guilgal-46426",
+    storageBucket: "guilgal-46426.firebasestorage.app",
+    messagingSenderId: "545432703753",
+    appId: "1:545432703753:web:64823e084079f1e57fb9d8",
+    measurementId: "G-0F61YDFCCY"
+};
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const errorMessage = document.getElementById('errorMessage');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginLink = document.getElementById('loginLink');
+
+    function handleAuth(event, type) {
+        event.preventDefault();
+
+           let username , password;
+
+            if(type == 'login'){
+              username = document.getElementById('username').value;
+             password = document.getElementById('password').value;
+           } else {
+              username = document.getElementById('usernameRegister').value;
+             password = document.getElementById('passwordRegister').value;
+           }
+
+        if(type === 'login') {
+             loginUser(username, password)
+         } else {
+                registerUser(username,password)
+         }
+     }
+
+      async function loginUser(username, password) {
+        try {
+            const adminsRef = database.ref('admins');
+            const snapshot = await adminsRef.orderByChild('username').equalTo(username).once('value');
+            const admins = snapshot.val();
+
+            if (!admins) {
+                errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+           let adminId = null;
+           let admin = null;
+           for (const id in admins) {
+               if (admins[id].password === password) {
+                   adminId = id;
+                   admin = admins[id];
+                   break;
+               }
+           }
+
+            if (admin) {
+               sessionStorage.setItem('isLoggedIn', 'true');
+                sessionStorage.setItem('currentUser', admin.username); // Stocker le nom d'utilisateur
+                sessionStorage.setItem('currentUserStatus', admin.status); // Stocker le status de l'utilisateur
+                window.location.href = 'index.html';
+             } else {
+                 errorMessage.textContent = 'Nom d\'utilisateur ou mot de passe incorrect';
+                errorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Erreur de connexion:', error);
+            errorMessage.textContent = 'Une erreur est survenue. Veuillez réessayer.';
+            errorMessage.style.display = 'block';
+        }
+    }
+
+        async function registerUser(username, password) {
+            try {
+                const email = document.getElementById('emailRegister').value
+                const adminRef = database.ref('admins');
+                const snapshot = await adminRef.orderByChild('username').equalTo(username).once('value');
+                const admins = snapshot.val();
+
+                if (admins) {
+                    errorMessage.textContent = 'Ce nom d\'utilisateur est déjà pris.';
+                    errorMessage.style.display = 'block';
+                    return;
+                }
+
+                // Enregistrer l'utilisateur dans la base de données avec le statut "Vendeur"
+                const newAdminRef = adminRef.push();
+                 await newAdminRef.set({
+                    username: username,
+                    password: password,
+                    email: email,
+                     status: "Vendeur",
+                });
+
+                alert('Inscription réussie ! Vous pouvez maintenant vous connecter.');
+                showLoginForm();
+            } catch (error) {
+                console.error('Erreur lors de l\'inscription:', error);
+                errorMessage.textContent = 'Une erreur s\'est produite lors de l\'inscription. Veuillez réessayer. ' + error.message;
+                errorMessage.style.display = 'block';
+            }
+        }
+
+     function showLoginForm() {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            loginLink.style.display = 'none';
+            document.querySelector('.auth-container h1').textContent = 'Connexion';
+              document.getElementById('showRegister').parentElement.style.display = 'block';
+              errorMessage.style.display = 'none';
+        }
+
+        function showRegisterForm() {
+            loginForm.style.display = 'none';
+             registerForm.style.display = 'block';
+             loginLink.style.display = 'block';
+              document.querySelector('.auth-container h1').textContent = 'Inscription';
+           document.getElementById('showRegister').parentElement.style.display = 'none';
+           errorMessage.style.display = 'none';
+        }
+
+          document.getElementById('showRegister').addEventListener('click', showRegisterForm);
+          document.getElementById('showLogin').addEventListener('click', showLoginForm);
+    </script>
+</body>
+</html>
